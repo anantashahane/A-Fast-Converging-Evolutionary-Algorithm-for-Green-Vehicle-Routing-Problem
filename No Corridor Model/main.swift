@@ -27,7 +27,7 @@ for (index, file) in files.enumerated() {
         let ge = GeneticAlgorithm(fileName: file, populationSize: 100)
         var archive = [Routine]()
         let result = clock.measure {
-            archive = ge.RunAlgorithm(iterationCount: 500)
+            archive = ge.RunAlgorithm(iterationCount: 500, run: run)
         }
         print("Took \(result).")
         
