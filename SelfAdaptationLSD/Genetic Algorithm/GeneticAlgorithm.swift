@@ -71,7 +71,7 @@ class GeneticAlgorithm {
     }
     
     func ShareStrictness() {
-        let strictness = parentPopulation.map({$0.strictness}).reduce(0, +)
+        let strictness = parentPopulation.map({$0.strictness * Double(paretoFronts.count - $0.frontNumber) / Double(paretoFronts.count)}).reduce(0, +)
         averageStrictness = strictness / Double(parentPopulation.count)
         strictnessProgression.append(averageStrictness)
     }

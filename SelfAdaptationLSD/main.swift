@@ -7,8 +7,10 @@
 
 import Foundation
 
+var runNumber : Int? = nil
 let commandLineArguements = CommandLine.arguments
 var files = [String]()
+
 if commandLineArguements.count < 2 {
     files = ReadFiles(afterName: "A-n32-k5")
 } else {

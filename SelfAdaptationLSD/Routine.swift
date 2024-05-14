@@ -243,10 +243,9 @@ struct Routine {
         return returnTrucks
     }
     
-    mutating func UpdateStrictness(globalStrictness : Double, center: Double, upperBound: Double) {
+    mutating func UpdateStrictness(center: Double, upperBound: Double) {
         do {
             self.strictness = try Double.RandomNumber(center : center, upperBound : upperBound, seed : nil)
-            self.strictness = (self.strictness + globalStrictness) / 2
         } catch {
             print("Error.")
         }
