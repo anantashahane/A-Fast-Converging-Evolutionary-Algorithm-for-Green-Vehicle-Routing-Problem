@@ -69,6 +69,10 @@ func GetDotProduct(projector : Truck, projectee: Truck, fromCustomer: Customer, 
 }
 
 extension Double {
+    enum RNGError : Error {
+        case invalidUpperBound
+        case centerOutOfRange
+    }
     static func NormalRandom(mu: Double, sigma: Double) -> Double {
         let u1 = Double.random(in: 0...1)
         let u2 = Double.random(in: 0...1)
@@ -78,4 +82,37 @@ extension Double {
         
         return randomNumber
     }
+    
+    static func RandomNumber(center : Double, upperBound : Double, seed : Double?) throws -> Double {
+        if upperBound < 0 {
+            print("RNG Error: Upperbound (\(upperBound)) set lower than 0.")
+            throw RNGError.invalidUpperBound
+        }
+        if center > upperBound || center < 0 {
+            print("RNG Error: Center (\(center)) too low.")
+        }
+        var angle = 0.0
+        if let seed = seed {
+            angle = seed
+        } else {
+            angle = Double.random(in: 0...1)
+        }
+        angle = max(angle, 0.01)
+        let frontRatio = center / upperBound
+        if angle < frontRatio {
+            angle = angle / frontRatio * Double.pi / 2
+            return center * sin(angle)
+        } else {
+            angle = ((1 - angle) / (1 - frontRatio)) * Double.pi / 2
+            return center + (upperBound - center) * (1 - sin(angle))
+        }
+    }
 }
+
+//    frontRatio = (center - lowerBound) / (upperBound - lowerBound)
+//    if seed < frontRatio:
+//        angle = seed / frontRatio * np.pi / 2
+//        return center * np.sin(angle)
+//    else:
+//        angle = ((1 - seed) / (1 - frontRatio)) * np.pi / 2
+//        return center + (upperBound - center) * (1 - np.sin(angle))
