@@ -12,14 +12,34 @@ extension GeneticAlgorithm {
     func Initialise() {
         archive.ClearArchive()
         for _ in 1...populationSize {
-//            if i % 10 == 0 {print("Generating individual \(i)")}
             var flag = false
             var individual = Routine(trucks: [])
             while !flag {
                 (flag, individual) = GetSeed(balanced: Bool.random())
+                // (flag, individual) = GetRandomSeed()
             }
             parentPopulation.append(individual)
         }
+    }
+
+    private func GetRandomSeed() -> (Bool, Routine) {
+        var trucks = [Truck]()
+        var remainingCustomers = Array(Customers.values)
+        for _ in 0..<numberOfTrucks {
+            var truck = Truck(sequenceOfCustomers: [])
+            var flag = true
+            while flag {
+                if remainingCustomers.isEmpty || remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: vehicleCapacity)}).isEmpty {
+                    flag = false
+                }
+                if let candidateCustomer = remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: vehicleCapacity)}).randomElement() {
+                    truck.AddCustomer(customer: candidateCustomer, allCustomers: Customers.values)
+                    remainingCustomers = remainingCustomers.filter({$0.id != candidateCustomer.id})
+                }
+            }
+            trucks.append(truck)
+        }
+        return (remainingCustomers.isEmpty, Routine(trucks: trucks))
     }
     
     private func GetSeed(balanced : Bool) -> (Bool, Routine) {

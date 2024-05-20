@@ -17,11 +17,32 @@ extension GeneticAlgorithm {
             var individual = Routine(trucks: [], averageStrictness: Double(Customers.count / 2))
             while !flag {
                 (flag, individual) = GetSeed(balanced: Bool.random())
+                // (flag, individual) = GetRandomSeed()
             }
-            individual.strictness = Double.random(in: 1...50)
+            individual.strictness = Double.random(in: 1...Double(Customer.count))
             parentPopulation.append(individual)
         }
     }
+
+    private func GetRandomSeed() -> (Bool, Routine) {
+        var trucks = [Truck]()
+        var remainingCustomers = Array(Customers.values)
+        for _ in 0..<numberOfTrucks {
+            var truck = Truck(sequenceOfCustomers: [])
+            var flag = true
+            while flag {
+                if remainingCustomers.isEmpty || remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: vehicleCapacity)}).isEmpty {
+                    flag = false
+                }
+                if let candidateCustomer = remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: vehicleCapacity)}).randomElement() {
+                    truck.AddCustomer(customer: candidateCustomer, allCustomers: Customers.values)
+                    remainingCustomers = remainingCustomers.filter({$0.id != candidateCustomer.id})
+                }
+            }
+            trucks.append(truck)
+        }
+        return (remainingCustomers.isEmpty, Routine(trucks: trucks, averageStrictness: Double.random(in: 0...Double(Customers.count))))
+    }    
     
     private func GetSeed(balanced : Bool) -> (Bool, Routine) {
         var trucks = [Truck]()
@@ -55,6 +76,6 @@ extension GeneticAlgorithm {
             }
             trucks.append(truck)
         }
-        return (remainingCustomers.isEmpty, Routine(trucks: trucks, averageStrictness: Double(Customers.count / 2)))
+        return (remainingCustomers.isEmpty, Routine(trucks: trucks, averageStrictness: Double.random(in: 0...Double(Customers.count))))
     }
 }

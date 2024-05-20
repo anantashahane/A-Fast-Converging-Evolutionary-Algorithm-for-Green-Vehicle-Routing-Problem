@@ -89,7 +89,7 @@ extension Double {
             throw RNGError.invalidUpperBound
         }
         if center > upperBound || center < 0 {
-            print("RNG Error: Center (\(center)) too low.")
+            print("RNG Error: Center (\(center)) out of range [0, \(upperBound)).")
         }
         var angle = 0.0
         if let seed = seed {
@@ -108,11 +108,3 @@ extension Double {
         }
     }
 }
-
-//    frontRatio = (center - lowerBound) / (upperBound - lowerBound)
-//    if seed < frontRatio:
-//        angle = seed / frontRatio * np.pi / 2
-//        return center * np.sin(angle)
-//    else:
-//        angle = ((1 - seed) / (1 - frontRatio)) * np.pi / 2
-//        return center + (upperBound - center) * (1 - np.sin(angle))

@@ -16,40 +16,25 @@ extension GeneticAlgorithm {
             var flag = false
             var individual = Routine(trucks: [])
             while !flag {
-                (flag, individual) = GetSeed(balanced: Bool.random())
+                (flag, individual) = GetSeed()
             }
             parentPopulation.append(individual)
         }
     }
     
-    private func GetSeed(balanced : Bool) -> (Bool, Routine) {
+    private func GetSeed() -> (Bool, Routine) {
         var trucks = [Truck]()
         var remainingCustomers = Array(Customers.values)
-        let totalDemand = remainingCustomers.map({$0.demand}).reduce(0, +)
         for _ in 0..<numberOfTrucks {
             var truck = Truck(sequenceOfCustomers: [])
             var flag = true
             while flag {
-                if remainingCustomers.isEmpty {
+                if remainingCustomers.isEmpty || remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: vehicleCapacity)}).isEmpty {
                     flag = false
                 }
-                if truck.sequence.isEmpty {
-                    if let candidateCustomer = remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: vehicleCapacity)}).randomElement() {
-                        truck.AddCustomer(customer: candidateCustomer, allCustomers: Customers.values)
-                        remainingCustomers = remainingCustomers.filter({$0.id != candidateCustomer.id})
-                    }
-                } else {
-                    let lastCustomer = Customers[truck.sequence.last!]!
-                    if let candidateCustomer = remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: vehicleCapacity)}).sorted(by: {
-                        GetDotProduct(shadow: $0, onCustomer: lastCustomer, fromCustomer: Depot, maxDistance: maxDistance) > GetDotProduct(shadow: $1, onCustomer: lastCustomer, fromCustomer: Depot, maxDistance: maxDistance)}).first {
-                        truck.AddCustomer(customer: candidateCustomer, allCustomers: Customers.values)
-                        remainingCustomers = remainingCustomers.filter({$0.id != candidateCustomer.id})
-                    } else {
-                        flag = false
-                    }
-                    if truck.GetDemand() > totalDemand / numberOfTrucks || balanced {
-                        flag = false
-                    }
+                if let candidateCustomer = remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: vehicleCapacity)}).randomElement() {
+                    truck.AddCustomer(customer: candidateCustomer, allCustomers: Customers.values)
+                    remainingCustomers = remainingCustomers.filter({$0.id != candidateCustomer.id})
                 }
             }
             trucks.append(truck)

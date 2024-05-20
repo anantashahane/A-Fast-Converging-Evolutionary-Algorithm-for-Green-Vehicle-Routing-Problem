@@ -12,7 +12,9 @@ extension GeneticAlgorithm {
     func MutatePopulation() {
         for (index, _) in offspringPopulation.enumerated() {
             let randomNumber = SpinRouletteWheel(strictness: 2, onCandidates: Array(1...5))
-            offspringPopulation[index].UpdateStrictness(center : averageStrictness, upperBound: Double(Customers.count))
+            if randomNumber != 1 {
+                offspringPopulation[index].UpdateStrictness(center : averageStrictness, upperBound: Double(Customers.count))
+            }
             switch randomNumber {
             case 1: offspringPopulation[index] = TSPMutation(individual: offspringPopulation[index])
             case 2: offspringPopulation[index] = LNS(individual: offspringPopulation[index])

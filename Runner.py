@@ -10,7 +10,7 @@ from datetime import datetime
 
 numberofCores = os.cpu_count()
 # Resume Index
-BenchmarkIterator = 0
+BenchmarkIterator = 11 
 
 benchmarksFiles = glob.glob("./Benchmarks/*/*.json")
 benchmarks = [benchmark := benchmarkFile.split("/")[-1].split(".")[0] for benchmarkFile in benchmarksFiles]
@@ -21,8 +21,7 @@ df["Customers"] = customers
 df = df.sort_values(["Customers"], ascending=False)
 df = df.reset_index()
 df = df.drop(["index"], axis=1)
-print(list(df["Benchmarks"]))
-df
+print(df)
 
 
 
