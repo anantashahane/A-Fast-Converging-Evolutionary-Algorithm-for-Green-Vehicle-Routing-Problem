@@ -23,11 +23,11 @@ A short research paper is soon going to be published in ACM journal, by GECCO 20
 ```
 
 ## How to Build
-We have provided a make shell script that takes in one of the following arguement and build the associated model executable:
+We have provided a make script that takes in one of the following arguement and build the associated model executable:
 1. `TumbleWeedModel`: is a model that searches for optimal strictness, with former pareto fronts exploring and later exploiting.
 2. `SelfAdaptationModel`: is a model that searches for optimal strictness using normal random number generation.
 3. `NoCorridorModel`: is a tradational complete random mutation model.
-To get an executable just run `bash make.sh <One of the above model names>`. This will generate `run` file that takes in some arguement, if not provided it runs all the benchmarks 10 times for statistical relevance.
+To get an executable just run `make <One of the above model names>`. This will generate `run` file that takes in some arguement, if not provided it runs all the benchmarks 10 times for statistical relevance.
 
 A macOS app will also be made available to help visualise the main contributions of this research.
 
