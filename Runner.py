@@ -10,7 +10,7 @@ from datetime import datetime
 
 numberofCores = os.cpu_count()
 # Resume Index
-BenchmarkIterator = 11 
+BenchmarkIterator = 0
 
 benchmarksFiles = glob.glob("./Benchmarks/*/*.json")
 benchmarks = [benchmark := benchmarkFile.split("/")[-1].split(".")[0] for benchmarkFile in benchmarksFiles]

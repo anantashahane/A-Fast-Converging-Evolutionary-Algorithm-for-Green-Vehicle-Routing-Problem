@@ -19,7 +19,7 @@ extension GeneticAlgorithm {
                 (flag, individual) = GetSeed(balanced: Bool.random())
                 // (flag, individual) = GetRandomSeed()
             }
-            individual.strictness = Double.random(in: 1...Double(Customer.count))
+            individual.strictness = Double.random(in: 1...Double(Customers.count))
             parentPopulation.append(individual)
         }
     }
@@ -42,7 +42,7 @@ extension GeneticAlgorithm {
             trucks.append(truck)
         }
         return (remainingCustomers.isEmpty, Routine(trucks: trucks, averageStrictness: Double.random(in: 0...Double(Customers.count))))
-    }    
+    } 
     
     private func GetSeed(balanced : Bool) -> (Bool, Routine) {
         var trucks = [Truck]()

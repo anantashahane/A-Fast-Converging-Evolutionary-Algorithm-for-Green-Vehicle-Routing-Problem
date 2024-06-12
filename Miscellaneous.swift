@@ -82,29 +82,30 @@ extension Double {
         
         return randomNumber
     }
-    
+
     static func RandomNumber(center : Double, upperBound : Double, seed : Double?) throws -> Double {
         if upperBound < 0 {
             print("RNG Error: Upperbound (\(upperBound)) set lower than 0.")
             throw RNGError.invalidUpperBound
         }
-        if center > upperBound || center < 0 {
+        if center >= upperBound || center <= 0 {
             print("RNG Error: Center (\(center)) out of range [0, \(upperBound)).")
         }
-        var angle = 0.0
+        var val = 0.0
         if let seed = seed {
-            angle = seed
+            val = seed
         } else {
-            angle = Double.random(in: 0...1)
+            val = Double.random(in: 0...1)
         }
-        angle = max(angle, 0.01)
         let frontRatio = center / upperBound
-        if angle < frontRatio {
-            angle = angle / frontRatio * Double.pi / 2
-            return center * sin(angle)
+        if val < frontRatio {
+            val = val / frontRatio - 1
+            let unscaled = asin(val) + (Double.pi / 2)
+            return 2 * unscaled * center / Double.pi
         } else {
-            angle = ((1 - angle) / (1 - frontRatio)) * Double.pi / 2
-            return center + (upperBound - center) * (1 - sin(angle))
+            val = (val - frontRatio) / (1 - frontRatio)
+            let unscaled = asin(val)
+            return center + (2 * unscaled * (upperBound - center)) / Double.pi
         }
     }
 }
