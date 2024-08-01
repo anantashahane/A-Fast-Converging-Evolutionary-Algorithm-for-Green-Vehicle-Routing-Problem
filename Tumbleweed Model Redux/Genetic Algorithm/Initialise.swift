@@ -12,14 +12,12 @@ extension GeneticAlgorithm {
     func Initialise() {
         archive.ClearArchive()
         for _ in 1...populationSize {
-//            if i % 10 == 0 {print("Generating individual \(i)")}
             var flag = false
-            var individual = Routine(trucks: [], averageStrictness: Double(Customers.count / 2))
+            var individual = Routine(trucks: [])
             while !flag {
-                // (flag, individual) = GetSeed(balanced: Bool.random())
-                (flag, individual) = GetRandomSeed()
+                (flag, individual) = GetSeed(balanced: Bool.random())
+                // (flag, individual) = GetRandomSeed()
             }
-            individual.strictness = Double.random(in: 1...Double(Customers.count))
             parentPopulation.append(individual)
         }
     }
@@ -41,8 +39,8 @@ extension GeneticAlgorithm {
             }
             trucks.append(truck)
         }
-        return (remainingCustomers.isEmpty, Routine(trucks: trucks, averageStrictness: Double.random(in: 0...Double(Customers.count))))
-    } 
+        return (remainingCustomers.isEmpty, Routine(trucks: trucks))
+    }
     
     private func GetSeed(balanced : Bool) -> (Bool, Routine) {
         var trucks = [Truck]()
@@ -76,6 +74,6 @@ extension GeneticAlgorithm {
             }
             trucks.append(truck)
         }
-        return (remainingCustomers.isEmpty, Routine(trucks: trucks, averageStrictness: Double.random(in: 0...Double(Customers.count))))
+        return (remainingCustomers.isEmpty, Routine(trucks: trucks))
     }
 }
