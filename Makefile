@@ -26,18 +26,18 @@ help:
 # Targets for each model
 .PHONY: TumbleWeedModel
 TumbleWeedModel:
-	$(SWIFTC) -o $(OUTPUT) $(TUMBLEWEED_SOURCES)
+	$(SWIFTC) -o $(OUTPUT) -O $(TUMBLEWEED_SOURCES)
 .PHONY: TumbleWeedRedux
 TumbleWeedRedux:
-	$(SWIFTC) -o $(OUTPUT) $(TUMBLEWEEDREDUX_SOURCES)
+	$(SWIFTC) -o $(OUTPUT) -O $(TUMBLEWEEDREDUX_SOURCES)
 .PHONY: SelfAdaptationModel
 SelfAdaptationModel:
-	$(SWIFTC) -o $(OUTPUT) $(SELFADAPTATION_SOURCES)
+	$(SWIFTC) -o $(OUTPUT) -O $(SELFADAPTATION_SOURCES)
 
 .PHONY: SelfAdaptationLSD
 SelfAdaptationLSD:
-	$(SWIFTC) -o $(OUTPUT) $(SELFADAPTATIONLSD_SOURCES)
+	$(SWIFTC) -o $(OUTPUT) -O $(SELFADAPTATIONLSD_SOURCES)
 
 .PHONY: NoCorridorModel
 NoCorridorModel:
-	$(SWIFTC) -o $(OUTPUT) $(NOCORRIDOR_SOURCES)
+	$(SWIFTC) -o $(OUTPUT) -O $(NOCORRIDOR_SOURCES)

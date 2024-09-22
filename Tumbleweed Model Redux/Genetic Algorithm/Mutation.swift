@@ -12,14 +12,32 @@ extension GeneticAlgorithm {
     func MutatePopulation() {
         var newOffspringPopulation = [Routine]()
         for individual in parentPopulation {
-            let randomNumber = Int.random(in: 1...3)
+            let randomNumber = Int.random(in: 1...4)
             switch randomNumber {
             case 1: newOffspringPopulation.append(TSPMutation(individual: individual))
             case 2: newOffspringPopulation.append(FuelOptimiser(individual: individual))
+            case 3: newOffspringPopulation.append(RotateOperator(individual: individual))
             default: newOffspringPopulation.append(LNS(individual: individual))
             }
         }
         offspringPopulation = newOffspringPopulation
+    }
+
+    private func RotateOperator(individual: Routine) -> Routine {
+        var returnIndividual = individual
+        if let mutationTruck = returnIndividual.trucks.enumerated().filter({$0.element.sequence.count >= 3}).randomElement() {
+            let count = mutationTruck.element.sequence.count
+            let strictness = CalculateStrictness(routine: individual)
+            let sequence = mutationTruck.element.sequence.enumerated().sorted(by: {
+                Customers[$0.element]!.demand > Customers[$1.element]!.demand
+            })
+            if let randomElement = SpinRouletteWheel(strictness: strictness, onCandidates: sequence) {
+                let randomPoint = randomElement.offset
+                let sequence = Array(mutationTruck.element.sequence[randomPoint..<count] + mutationTruck.element.sequence[0..<randomPoint])
+                returnIndividual.trucks[mutationTruck.offset].sequence = sequence
+            }
+        }
+        return returnIndividual
     }
     
     private func TSPMutation(individual : Routine) -> Routine {
@@ -29,18 +47,18 @@ extension GeneticAlgorithm {
             var sequence = mutationTruck.element.sequence
             let alpha = pow(2.71, Double.NormalRandom(mu: 0, sigma: 1)) * mutationTruck.element.GetAlpha()
             returnIndividual.trucks[mutationTruck.offset].SetAlpha(to: alpha)
-            if let randomCustomer = sequence[0..<sequence.count - 1].randomElement() {
+            if let randomCustomer = sequence[0..<sequence.count - 2].randomElement() {
                 let randomCustomerIndex = sequence.enumerated().filter({$0.element == randomCustomer}).first!.offset
                 let distanceToBeat = distanceMatrix[randomCustomer][sequence[randomCustomerIndex + 1]] * alpha
-                var candidateCustomers = sequence.enumerated().filter({distanceMatrix[randomCustomer][$0.element] < distanceToBeat})
-                if Double.random(in: 0...1) < 0.1 {
+                var candidateCustomers = Array(sequence.enumerated())[randomCustomerIndex + 1..<sequence.count].filter({distanceMatrix[randomCustomer][$0.element] < distanceToBeat})
+                if Double.random(in: 0...1) < 0.5 {
                     candidateCustomers = candidateCustomers.sorted(by: {Customers[$0.element]!.demand > Customers[$1.element]!.demand})
                 } else {
                     candidateCustomers = candidateCustomers.sorted(by: {distanceMatrix[randomCustomer][$0.element] < distanceMatrix[randomCustomer][$1.element]})
                 }
                 let strictness = CalculateStrictness(routine: individual)
                 if let mutationPoint = SpinRouletteWheel(strictness: strictness, onCandidates: candidateCustomers) {
-                    sequence = Array(sequence[0..<min(randomCustomerIndex, mutationPoint.offset) + 1] + sequence[min(randomCustomerIndex, mutationPoint.offset) + 1..<max(randomCustomerIndex, mutationPoint.offset) + 1].reversed() + sequence[max(randomCustomerIndex, mutationPoint.offset) + 1..<sequence.count])
+                    sequence = Array(sequence[0...randomCustomerIndex] + sequence[randomCustomerIndex + 1...mutationPoint.offset].reversed() + sequence[mutationPoint.offset + 1..<sequence.count])
                     returnIndividual.trucks[mutationTruck.offset].sequence = sequence
                 } else {
                     let count = mutationTruck.element.sequence.count
@@ -48,6 +66,8 @@ extension GeneticAlgorithm {
                     let sequence = Array(mutationTruck.element.sequence[randomPoint..<count] + mutationTruck.element.sequence[0..<randomPoint])
                     returnIndividual.trucks[mutationTruck.offset].sequence = sequence
                 }
+            } else {
+                returnIndividual = RotateOperator(individual: returnIndividual)
             }
         }
         return returnIndividual
@@ -55,7 +75,7 @@ extension GeneticAlgorithm {
     
     private func FuelOptimiser(individual : Routine) -> Routine {
         var returnIndividual = individual
-        let strictness = 1.0 //pow(2.71, Double(np.random.normal(0,1))!)
+        let strictness = CalculateStrictness(routine : individual)
         if let truck = returnIndividual.trucks.enumerated().filter({$0.element.sequence.count > 2}).randomElement() {
             var sequence = truck.element.sequence
             let randomIndex = Int.random(in: 0..<sequence.count - 1)

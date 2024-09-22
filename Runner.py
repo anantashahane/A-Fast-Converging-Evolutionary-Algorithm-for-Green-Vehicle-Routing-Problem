@@ -21,7 +21,7 @@ df["Customers"] = customers
 df = df.sort_values(["Customers"], ascending=False)
 df = df.reset_index()
 df = df.drop(["index"], axis=1)
-print(df)
+print(df.to_string())
 
 
 
@@ -70,4 +70,3 @@ while continueFlag:
             print(f"{formatted_time} Done")
             continueFlag = False
     time.sleep(10)
-
