@@ -1,0 +1,114 @@
+.
+├──  README.md
+├── Assets
+│   ├── AUC-Distance.png
+│   ├── AUC-Fuel.png
+│   ├── AUC-Overall.png
+│   ├── DistanceResults.png
+│   ├── FuelPlot.png
+│   ├── InitialisationResults.png
+│   └── Tumble Weed Model vs No Corridor: A-n32-k5.png
+├── initial_state
+├── LICENSE
+├── Makefile
+├── Miscellaneous.swift
+├── No Corridor Model
+│   ├── Customer.swift
+│   ├── Genetic Algorithm
+│   │   ├── Crossover.swift
+│   │   ├── Evaluate.swift
+│   │   ├── GeneticAlgorithm.swift
+│   │   ├── Initialise.swift
+│   │   ├── Mutation.swift
+│   │   ├── Roulette.swift
+│   │   └── Selection.swift
+│   ├── LogFront.swift
+│   ├── main.swift
+│   ├── MultiObjectiveArchive.swift
+│   ├── Readfile.swift
+│   ├── ReadFiles.swift
+│   └── Routine.swift
+├── README.md
+├── Runner.py
+├── Self Adaptation Model
+│   ├── Customer.swift
+│   ├── Genetic Algorithm
+│   │   ├── Crossover.swift
+│   │   ├── Evaluate.swift
+│   │   ├── GeneticAlgorithm.swift
+│   │   ├── Initialise.swift
+│   │   ├── Mutation.swift
+│   │   ├── Roulette.swift
+│   │   └── Selection.swift
+│   ├── LogFront.swift
+│   ├── main.swift
+│   ├── MultiObjectiveArchive.swift
+│   ├── Readfile.swift
+│   ├── ReadFiles.swift
+│   └── Routine.swift
+├── SelfAdaptationLSD
+│   ├── Customer.swift
+│   ├── Genetic Algorithm
+│   │   ├── Crossover.swift
+│   │   ├── Evaluate.swift
+│   │   ├── GeneticAlgorithm.swift
+│   │   ├── Initialise.swift
+│   │   ├── Mutation.swift
+│   │   ├── Roulette.swift
+│   │   └── Selection.swift
+│   ├── LogFront.swift
+│   ├── main.swift
+│   ├── MultiObjectiveArchive.swift
+│   ├── Readfile.swift
+│   ├── ReadFiles.swift
+│   └── Routine.swift
+├── Tumbleweed Model
+│   ├── Customer.swift
+│   ├── Genetic Algorithm
+│   │   ├── Crossover.swift
+│   │   ├── Evaluate.swift
+│   │   ├── GeneticAlgorithm.swift
+│   │   ├── Initialise.swift
+│   │   ├── Mutation.swift
+│   │   ├── Roulette.swift
+│   │   └── Selection.swift
+│   ├── LogFront.swift
+│   ├── main.swift
+│   ├── MultiObjectiveArchive.swift
+│   ├── Readfile.swift
+│   ├── ReadFiles.swift
+│   └── Routine.swift
+├── Tumbleweed Model Redux
+│   ├── Customer.swift
+│   ├── Genetic Algorithm
+│   │   ├── Crossover.swift
+│   │   ├── Evaluate.swift
+│   │   ├── GeneticAlgorithm.swift
+│   │   ├── Initialise.swift
+│   │   ├── Mutation.swift
+│   │   ├── Roulette.swift
+│   │   └── Selection.swift
+│   ├── LogFront.swift
+│   ├── main.swift
+│   ├── MultiObjectiveArchive.swift
+│   ├── Readfile.swift
+│   ├── ReadFiles.swift
+│   └── Routine.swift
+└── Tumbleweed Model Redux Dynamic Anchor
+    ├── Customer.swift
+    ├── Genetic Algorithm
+    │   ├── Crossover.swift
+    │   ├── Evaluate.swift
+    │   ├── GeneticAlgorithm.swift
+    │   ├── Initialise.swift
+    │   ├── Mutation.swift
+    │   ├── Roulette.swift
+    │   └── Selection.swift
+    ├── LogFront.swift
+    ├── main.swift
+    ├── MultiObjectiveArchive.swift
+    ├── Readfile.swift
+    ├── ReadFiles.swift
+    └── Routine.swift
+
+14 directories, 98 files

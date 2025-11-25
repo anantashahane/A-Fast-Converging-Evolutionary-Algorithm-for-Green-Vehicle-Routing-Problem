@@ -29,9 +29,9 @@ struct Convergence : Encodable {
 struct EncodedBenchmark : Codable {
     let benchmark : String
     let customers : [EncodedCustomer]
+    let optimal : Int?
     let fleetSize : Int
     let vehicleCapcity : Int
-    let optimal : Int?
 }
 
 struct EncodedCustomer : Codable {

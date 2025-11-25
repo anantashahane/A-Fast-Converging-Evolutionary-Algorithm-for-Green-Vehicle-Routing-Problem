@@ -7,7 +7,7 @@
 
 import Foundation
 
-func ReadFiles(benchmarkNameContains : String? = nil, startingFrom : String? = nil) -> [String] {
+func ReadFiles(benchmarkNameContains : String? = nil, afterName : String? = nil) -> [String] {
     let localFileManager = FileManager()
     let docsDir = localFileManager.currentDirectoryPath.appending("/Benchmarks")
     var dataset = [String]()
@@ -26,7 +26,7 @@ func ReadFiles(benchmarkNameContains : String? = nil, startingFrom : String? = n
         }
     }
     dataset = dataset.sorted()
-    if let startingFrom = startingFrom {
+    if let startingFrom = afterName {
         if let startIndex = dataset.firstIndex(where: {$0.contains(startingFrom)}) {
             dataset = Array(dataset[startIndex..<dataset.count])
         }
@@ -36,4 +36,3 @@ func ReadFiles(benchmarkNameContains : String? = nil, startingFrom : String? = n
     }
     return dataset
 }
-
