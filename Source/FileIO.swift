@@ -1,10 +1,18 @@
 import Foundation
 
+///Type of point on the Customer or Depot
+enum PointKind {
+    ///Depicts a customer kind of point, i.e. demand > 0.
+    case Customer
+    ///Depicts a depot kind of point, i.e. demand <= 0.
+    case Depot
+}
+
 /// A single coordinate point in a benchmark dataset.
 ///
 /// Each point represents a node with an identifier, spatial coordinates,
 /// and an associated demand value used in routing / optimization problems.
-struct Point: Decodable {
+struct Point: Decodable, PointRepresentable {
     /// Unique identifier for the point.
     let id: Int
     /// X-coordinate in 2D space.
@@ -13,6 +21,14 @@ struct Point: Decodable {
     let y: Double
     /// Demand value associated with this point.
     let demand: Double
+    /// Derived Member, depicting property of the member:
+    var kind : PointKind {
+        demand <= 0 ? .Depot : .Customer
+    }
+
+    public func representivePoint() -> (x: Double, y: Double) {
+        return (x: self.x, y: self.y)
+    }
 }
 
 /// A benchmark dataset used for vehicle routing / optimization problems.
@@ -109,6 +125,12 @@ func GetAllBenchmarks(benchmarkNameContains: String?) -> [String] {
     return benchmarkPaths.sorted()
 }
 
-for benchmark in GetAllBenchmarks(benchmarkNameContains: nil) {
-    let _ = ReadFile(filePath: benchmark)
-}
+// for benchmark in GetAllBenchmarks(benchmarkNameContains: nil) {
+//     if let benchmarkData = ReadFile(filePath: benchmark) {
+//         print("\t\(benchmarkData.name) from \(benchmarkData.title); best known \(benchmarkData.optimality)")
+//         print("\t\t Truck fleet of \(benchmarkData.trucks) with capacity \(benchmarkData.capacity).")
+//         for point in benchmarkData.points {
+//         print("\t\t\t \(point.kind == .Depot ? "Depot at" : "Customer with demand \(point.demand)") at (\(point.x), \(point.y)).")
+//         }
+//     }
+// }

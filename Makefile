@@ -4,7 +4,7 @@
 SWIFTC = swiftc
 
 # Define the output binary name
-OUTPUT = run
+OUTPUT = solver
 
 # Define source files for each model
 TUMBLEWEED_SOURCES = Miscellaneous.swift Tumbleweed\ Model/*.swift Tumbleweed\ Model/Genetic\ Algorithm/*.swift
