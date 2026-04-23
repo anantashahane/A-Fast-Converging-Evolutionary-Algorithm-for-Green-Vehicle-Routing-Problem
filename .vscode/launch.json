@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:A-Fast-Converging-Evolutionary-Algorithm-for-Green-Vehicle-Routing-Problem}",
+            "name": "Debug Runner",
+            "target": "Runner",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Runner"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:A-Fast-Converging-Evolutionary-Algorithm-for-Green-Vehicle-Routing-Problem}",
+            "name": "Release Runner",
+            "target": "Runner",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Runner"
+        }
+    ]
+}
