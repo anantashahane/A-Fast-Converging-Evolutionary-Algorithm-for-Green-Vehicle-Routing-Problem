@@ -93,9 +93,26 @@ class GeneticAlgorithm {
         }
     }
 
+    private func EvaluateIndividualFuel(individual: inout Routine) {
+        for (tid, truck) in individual.GetTrucks() {
+            var previous = self.Depot.id
+            var fuel = 0.0
+            var remainingDemand = truck.GetDemand()
+            for servicePoint in truck.GetSequence() {
+                fuel += ((1 + (remainingDemand / self.benchmark.capacity)) * distanceMatrix[previous][servicePoint])
+                remainingDemand -= (self.Customers[servicePoint]?.demand ?? 0)
+                previous = servicePoint
+            }
+            fuel += distanceMatrix[previous][self.Depot.id]
+            individual.SetTruckFitness(indexed: tid, objective: .Fuel, value: fuel)
+        }
+    }
+
+
     func EvaluatePopulation() {
         for index in 0..<self.offspringPopulation.count {
             self.EvaluateIndividualDistance(individual: &offspringPopulation[index])
+            self.EvaluateIndividualFuel(individual: &offspringPopulation[index])
         }
     }
 

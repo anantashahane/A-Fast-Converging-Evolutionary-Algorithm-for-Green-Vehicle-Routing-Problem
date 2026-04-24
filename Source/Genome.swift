@@ -135,6 +135,10 @@ struct Truck: PointRepresentable {
         return self.scores[forObjective]
     }
 
+    func GetDemand() -> Double {
+        return self.demand
+    }
+
     /// Returns a string identifier for the truck.
     ///
     /// Derived from the sequence of customer IDs.
@@ -145,10 +149,10 @@ struct Truck: PointRepresentable {
     /// Sets the evaluation scores for supported objectives.
     ///
     /// - Parameters:
-    ///   - distance: Distance covered during route traversal.
-    ///   - fuel: Fuel consumpted during route traversal.
+    ///   - objective: Distance / Fuel objective to update the value.
+    ///   - value: Fitness value of said objective.
     mutating func SetFitness(objective: OptimisationObjective, value: Double) {
-        self.scores[.Distance] = value
+        self.scores[objective] = value
     }
 
     func CanAccept(customer: Point, capacity: Double) -> Bool {
