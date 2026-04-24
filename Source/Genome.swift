@@ -147,8 +147,8 @@ struct Truck: PointRepresentable {
     /// - Parameters:
     ///   - distance: Distance covered during route traversal.
     ///   - fuel: Fuel consumpted during route traversal.
-    mutating func SetFitness(distance: Double, fuel: Double) {
-        self.scores = [.Distance: distance, .Fuel: fuel]
+    mutating func SetFitness(objective: OptimisationObjective, value: Double) {
+        self.scores[.Distance] = value
     }
 
     func CanAccept(customer: Point, capacity: Double) -> Bool {
@@ -235,6 +235,10 @@ struct Routine {
     ///   - truck: The new `Truck` to insert at the specified index.
     mutating func SetTruck(at index: Int, to truck: Truck) {
         trucks[index] = truck
+    }
+
+    mutating func SetTruckFitness(indexed: Int, objective: OptimisationObjective, value: Double) {
+        self.trucks[indexed].SetFitness(objective: objective, value: value)
     }
     
     /// Calculates the aggregated fitness of the routine across all objectives.

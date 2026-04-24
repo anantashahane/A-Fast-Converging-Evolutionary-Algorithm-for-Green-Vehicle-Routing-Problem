@@ -43,7 +43,7 @@ func BuildDistanceMatrix(from benchmark: Benchmark) -> [[Double]] {
 /// - Important:
 ///   This function assumes `representativePoint()` returns valid Cartesian coordinates.
 ///   It will return `0` if any geometric degeneracy is detected.
-func DotProduct(of source: PointRepresentable, on target: PointRepresentable, anchor: PointRepresentable) -> Double {
+func DotProduct(source: PointRepresentable, target: PointRepresentable, anchor: PointRepresentable) -> Double {
     let dist = EuclideanDistance(from: source, to: target)
     if (dist == 0 || EuclideanDistance(from: anchor, to: target) == 0 || EuclideanDistance(from: anchor, to: source) == 0) { return 0 }
     

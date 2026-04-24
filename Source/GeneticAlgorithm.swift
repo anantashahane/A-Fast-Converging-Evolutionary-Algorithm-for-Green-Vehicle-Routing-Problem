@@ -34,12 +34,15 @@ class GeneticAlgorithm {
 
     // #MARK: - Initialisation
     func InitialisePopulation() -> [Routine] {
-        while self.parentPopulation.count < self.populationCount {
+        var attempts = 0
+        while self.offspringPopulation.count < self.populationCount {
             if let individual = self.initialiseIndividual() {
-                self.parentPopulation.append(individual)
+                self.offspringPopulation.append(individual)
+                attempts += 1
             }
         }
-        return self.parentPopulation
+        print("Parent population: \(self.parentPopulation.count), attempts: \(attempts).")
+        return self.offspringPopulation
     }
 
     private func initialiseIndividual(strictness: Double = 100) -> Routine? {
@@ -51,16 +54,22 @@ class GeneticAlgorithm {
             if let randomCustomer = acceptableCustomer.randomElement() {
                 if truck.AddCustomer(customer: randomCustomer, allCustomers: Array(self.Customers.values), lut: self.distanceMatrix, capacity: self.benchmark.capacity) {
                     remainingCustomers = remainingCustomers.filter({$0.id != randomCustomer.id})
-                    acceptableCustomer = remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: self.benchmark.capacity)})
                 }
             }
+            acceptableCustomer = remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: self.benchmark.capacity)})
+            var lastCustomer = self.Depot
             while (!acceptableCustomer.isEmpty) {
+                acceptableCustomer = acceptableCustomer.sorted(by: {
+                    DotProduct(source: $0, target: lastCustomer, anchor: self.Depot) > DotProduct(source: $1, target: lastCustomer, anchor: self.Depot)
+                })
                 if let candidateCustomer = SpinRouletteWheel(strictness: strictness, onCandidates: acceptableCustomer) {
                     if truck.AddCustomer(customer: candidateCustomer, allCustomers: Array(self.Customers.values), lut: self.distanceMatrix, capacity: self.benchmark.capacity) {
                         remainingCustomers = remainingCustomers.filter({$0.id != candidateCustomer.id})
                     }
+                    lastCustomer = candidateCustomer
                 }
                 acceptableCustomer = remainingCustomers.filter({truck.CanAccept(customer: $0, capacity: self.benchmark.capacity)})
+
             }
             trucks.append(truck)
         }
@@ -69,4 +78,31 @@ class GeneticAlgorithm {
         }
         return nil
     }
+
+    //MARK: - Evaluation
+    private func EvaluateIndividualDistance(individual: inout Routine) {
+        for (tid, truck) in individual.GetTrucks() {
+            var previous = self.Depot.id
+            var distance = 0.0
+            for servicePoint in truck.GetSequence() {
+                distance += self.distanceMatrix[previous][servicePoint]
+                previous = servicePoint
+            }
+            distance += self.distanceMatrix[previous][self.Depot.id]
+            individual.SetTruckFitness(indexed: tid, objective: .Distance, value: distance)
+        }
+    }
+
+    func EvaluatePopulation() {
+        for index in 0..<self.offspringPopulation.count {
+            self.EvaluateIndividualDistance(individual: &offspringPopulation[index])
+        }
+    }
+
+    //#MARK: - DEBUG
+    public func GetOffspring() -> [Routine] {
+        return self.offspringPopulation
+    }
 }
+
+
