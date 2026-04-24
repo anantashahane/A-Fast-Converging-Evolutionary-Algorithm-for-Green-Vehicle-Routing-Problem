@@ -11,5 +11,5 @@ protocol PointRepresentable {
     /// Returns a representative 2D point for this type.
     ///
     /// - Returns: A tuple `(x, y)` describing the representative position.
-    func representivePoint() -> (x: Double, y: Double)
+    func representativePoint() -> (x: Double, y: Double)
 }

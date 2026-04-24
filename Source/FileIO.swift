@@ -26,7 +26,7 @@ struct Point: Decodable, PointRepresentable {
         demand <= 0 ? .Depot : .Customer
     }
 
-    public func representivePoint() -> (x: Double, y: Double) {
+    public func representativePoint() -> (x: Double, y: Double) {
         return (x: self.x, y: self.y)
     }
 }

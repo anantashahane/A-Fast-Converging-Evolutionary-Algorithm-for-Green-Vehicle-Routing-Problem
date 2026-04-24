@@ -12,7 +12,7 @@ enum OptimisationObjective: String, CaseIterable {
     case Fuel
 }
 
-//#MARK:- Truck
+//#MARK: - Truck
 struct Truck: PointRepresentable {
     /// Ordered sequence of customer IDs representing the route.
     ///
@@ -99,10 +99,21 @@ struct Truck: PointRepresentable {
         return sequence
     }
 
+    mutating func AddCustomer(customer: Point, allCustomers: [Point], lut: [[Double]], capacity: Double) -> Bool {
+        if self.CanAccept(customer: customer, capacity: capacity) {
+            self.sequence.append(customer.id)
+            self.demand += customer.demand
+            self.centerOfMass = Truck.UpdateRepresentativePoint(sequence: Array(allCustomers.filter({self.sequence.contains($0.id)})))
+            self.alphaRange = Truck.UpdateAlphaRange(sequence: self.sequence, lut: lut)
+            return true
+        }
+        return false
+    }
+
     /// Returns the representative point of the truck.
     ///
     /// Typically corresponds to the center of mass of all customers in the route.
-    func representivePoint() -> (x: Double, y: Double) {
+    func representativePoint() -> (x: Double, y: Double) {
         return self.centerOfMass
     }
 
@@ -119,11 +130,15 @@ struct Truck: PointRepresentable {
         }
         return vector
     }
+    
+    func GetFitness(forObjective: OptimisationObjective) -> Double? {
+        return self.scores[forObjective]
+    }
 
     /// Returns a string identifier for the truck.
     ///
     /// Derived from the sequence of customer IDs.
-    func getID() -> String {
+    func GetID() -> String {
         return "\(self.sequence)"
     }
 
@@ -132,8 +147,12 @@ struct Truck: PointRepresentable {
     /// - Parameters:
     ///   - distance: Distance covered during route traversal.
     ///   - fuel: Fuel consumpted during route traversal.
-    mutating func SetScores(distance: Double, fuel: Double) {
+    mutating func SetFitness(distance: Double, fuel: Double) {
         self.scores = [.Distance: distance, .Fuel: fuel]
+    }
+
+    func CanAccept(customer: Point, capacity: Double) -> Bool {
+        return (customer.kind == .Customer && self.demand + customer.demand <= capacity)
     }
 
     // Updates and returns the current alpha value.
@@ -150,5 +169,93 @@ struct Truck: PointRepresentable {
             self.alpha = newAlpha
         }
         return self.alpha
+    }
+}
+
+//#MARK: - Routine
+/// Represents a collection of `Truck` objects evaluated together as a candidate
+/// solution in a multi-objective optimization process.
+///
+/// A `Routine` aggregates multiple trucks and evaluates their combined fitness
+/// across all `OptimisationObjective` cases. It also stores metadata used for
+/// Pareto front ranking, such as dominance relationships.
+struct Routine {
+    
+    /// The trucks that make up this routine.
+    private var trucks: [Truck]
+    
+    /// A parameter controlling evaluation strictness.
+    /// Defaults to `1.0`.
+    private var strictness: Double
+    
+    /// Indices of routines that this routine dominates.
+    var dominatesSetIndex = [Int]()
+    
+    /// The number of routines that dominate this routine.
+    var dominatedBy = 0
+    
+    /// The Pareto front rank of this routine.
+    /// Lower values indicate better fronts (e.g., `0` is the best front).
+    var frontNumber = 0
+    
+    public var description : String {
+        "Routine (strictness: \(self.strictness)):\n\t\(self.trucks.map({String(describing: $0)}).joined(separator: "\n\t"))"
+    }
+    /// Creates a new routine with the given trucks.
+    ///
+    /// - Parameter trucks: An array of `Truck` instances to include in the routine.
+    init(trucks: [Truck]) {
+        self.trucks = trucks
+        self.strictness = 1.0
+    }
+    
+    /// Returns a unique identifier for the routine.
+    ///
+    /// The identifier is constructed by concatenating the IDs of all trucks,
+    /// separated by commas.
+    ///
+    /// - Returns: A string representing the combined truck IDs.
+    func GetID() -> String {
+        self.trucks.map { $0.GetID() }.joined(separator: ",")
+    }
+    
+    /// Returns the trucks in this routine as an enumerated sequence.
+    ///
+    /// Each element in the sequence contains the index and the corresponding `Truck`.
+    ///
+    /// - Returns: An enumerated sequence of trucks.
+    func GetTrucks() -> EnumeratedSequence<[Truck]> {
+        trucks.enumerated()
+    }
+    
+    /// Replaces the truck at the specified index.
+    ///
+    /// - Parameters:
+    ///   - index: The index of the truck to replace.
+    ///   - truck: The new `Truck` to insert at the specified index.
+    mutating func SetTruck(at index: Int, to truck: Truck) {
+        trucks[index] = truck
+    }
+    
+    /// Calculates the aggregated fitness of the routine across all objectives.
+    ///
+    /// Iterates over all cases of `OptimisationObjective` and sums the fitness
+    /// values of each truck for each objective.
+    ///
+    /// - Returns: A dictionary mapping each `OptimisationObjective` to its total fitness value.
+    ///
+    /// - Important: This method force unwraps the result of
+    ///   `Truck.GetFitness(forObjective:)`. Ensure that method never returns `nil`
+    ///   to avoid runtime crashes.
+    func GetFitness() -> [OptimisationObjective: Double] {
+        var fitness = [OptimisationObjective: Double]()
+        
+        for objective in OptimisationObjective.allCases {
+            for truck in trucks {
+                fitness[objective, default: 0] += truck.GetFitness(forObjective: objective)!
+            }
+        }
+        
+        return fitness
     }
 }
