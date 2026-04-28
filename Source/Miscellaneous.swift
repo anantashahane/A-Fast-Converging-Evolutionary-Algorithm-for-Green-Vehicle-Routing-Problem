@@ -92,3 +92,45 @@ func SpinRouletteWheel<T>(strictness: Double, onCandidates: [T]) -> T? {
     }
     return onCandidates[returnIndex]
 }
+
+extension Double {
+    enum RNGError : Error {
+        case invalidUpperBound
+        case centerOutOfRange
+    }
+    static func NormalRandom(mu: Double, sigma: Double) -> Double {
+        let u1 = Double.random(in: 0...1)
+        let u2 = Double.random(in: 0...1)
+        
+        let z0 = sqrt(-2 * log(u1)) * cos(2 * .pi * u2)
+        let randomNumber = z0 * sigma + mu
+        
+        return randomNumber
+    }
+
+    static func RandomNumber(center : Double, upperBound : Double, seed : Double? = nil) throws -> Double {
+        if upperBound < 0 {
+            print("RNG Error: Upperbound (\(upperBound)) set lower than 0.")
+            throw RNGError.invalidUpperBound
+        }
+        if center >= upperBound || center <= 0 {
+            print("RNG Error: Center (\(center)) out of range [0, \(upperBound)).")
+        }
+        var val = 0.0
+        if let seed = seed {
+            val = seed
+        } else {
+            val = Double.random(in: 0...1)
+        }
+        let frontRatio = center / upperBound
+        if val < frontRatio {
+            val = val / frontRatio - 1
+            let unscaled = asin(val) + (Double.pi / 2)
+            return 2 * unscaled * center / Double.pi
+        } else {
+            val = (val - frontRatio) / (1 - frontRatio)
+            let unscaled = asin(val)
+            return center + (2 * unscaled * (upperBound - center)) / Double.pi
+        }
+    }
+}

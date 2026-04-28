@@ -5,11 +5,17 @@
 ///
 /// Conforms to `CaseIterable` to allow iteration over all objectives
 /// (useful for benchmarking and experiment sweeps).
-enum OptimisationObjective: String, CaseIterable {
+enum OptimisationObjective: String, CaseIterable, CustomDebugStringConvertible {
     /// Total travel distance.
     case Distance
     /// Estimated fuel consumption.
     case Fuel
+    var description: String {
+        self.rawValue
+    }
+    var debugDescription: String {
+        description
+    }
 }
 
 //#MARK: - Truck
@@ -99,8 +105,11 @@ struct Truck: PointRepresentable {
         return sequence
     }
 
-    mutating func AddCustomer(customer: Point, allCustomers: [Point], lut: [[Double]], capacity: Double) -> Bool {
+    mutating func AddCustomer(customer: Point, allCustomers: [Point], lut: [[Double]], capacity: Double, atIndex: Int? = nil) -> Bool {
         if self.CanAccept(customer: customer, capacity: capacity) {
+            if let index = atIndex {
+                self.sequence.insert(customer.id, at: index)
+            }
             self.sequence.append(customer.id)
             self.demand += customer.demand
             self.centerOfMass = Truck.UpdateRepresentativePoint(sequence: Array(allCustomers.filter({self.sequence.contains($0.id)})))
@@ -174,6 +183,17 @@ struct Truck: PointRepresentable {
         }
         return self.alpha
     }
+
+    /// Mutates the sequence, asserts that the customers in being served by the truck did 
+    /// not change, but the sequnce in which they are served did.
+    /// 
+    /// A lite version of mutation function, that does not update any hyper-parameter, since the 
+    /// customer set is expected to remain same, best used for intra-vehicular optimisation like 
+    /// rotate-left, reversed, or 2-3 opt mutator.
+    mutating func MutateSequence(newSequence: [Int]) {
+        assert("\(self.sequence.sorted())" == "\(newSequence.sorted())", "Expected no change in the customers being served by truck.")
+        self.sequence = newSequence
+    }
 }
 
 //#MARK: - Routine
@@ -203,7 +223,7 @@ struct Routine {
     var frontNumber = 0
     
     public var description : String {
-        "Routine (strictness: \(self.strictness)):\n\t\(self.trucks.map({String(describing: $0)}).joined(separator: "\n\t"))"
+        "Routine (strictness: \(self.strictness), fitness: \(self.GetFitness())):\n\t\(self.trucks.map({"\($0.GetSequence()) with demand \($0.GetDemand())"}).joined(separator: "\n\t"))"
     }
     /// Creates a new routine with the given trucks.
     ///
@@ -241,8 +261,35 @@ struct Routine {
         trucks[index] = truck
     }
 
+    mutating func UpdateStrictness(upperBound: Double) -> Double {
+        if let strictness = try? Double.RandomNumber(center: self.strictness, upperBound: upperBound) {
+            self.strictness = strictness
+        }
+        return strictness
+    }
+
+    mutating func SetStrictness(strictness: Double) {
+        self.strictness = strictness
+    }
+
+    mutating func GetStrictness() -> Double {
+        return self.strictness
+    }
+
     mutating func SetTruckFitness(indexed: Int, objective: OptimisationObjective, value: Double) {
         self.trucks[indexed].SetFitness(objective: objective, value: value)
+    }
+
+    mutating func SetTruckSequence(indexed: Int, sequence: [Point], lut: [[Double]], capacity: Double) {
+        self.trucks[indexed].SetSequence(sequence: sequence, lut: lut, capacity: capacity)
+    }
+
+    mutating func MutateTruckSequence(indexed: Int, newSequence: [Int]) {
+        self.trucks[indexed].MutateSequence(newSequence: newSequence)
+    }
+
+    mutating func GetAlphaforTruck(indexed: Int) -> Double {
+        return self.trucks[indexed].GetAlpha()
     }
     
     /// Calculates the aggregated fitness of the routine across all objectives.
@@ -260,10 +307,9 @@ struct Routine {
         
         for objective in OptimisationObjective.allCases {
             for truck in trucks {
-                fitness[objective, default: 0] += truck.GetFitness(forObjective: objective)!
+                fitness[objective, default: 0] += truck.GetFitness(forObjective: objective) ?? 0
             }
         }
-        
         return fitness
     }
 }
