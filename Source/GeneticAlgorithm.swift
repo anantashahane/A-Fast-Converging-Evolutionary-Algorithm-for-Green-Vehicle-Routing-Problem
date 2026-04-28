@@ -200,6 +200,21 @@ class GeneticAlgorithm {
         return mutableIndividual
     }
 
+    private func getLNSCandidateList(forInserting source: Point, into individual: Routine) -> [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)] {
+        var data = [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)]()
+        for (tid, truck) in individual.GetTrucks() where truck.CanAccept(customer: source, capacity: self.benchmark.capacity) {
+            if truck.GetSequence().isEmpty {
+                let dotProduct = DotProduct(source: source, target: truck, anchor: self.Depot)
+                data.append((truck: tid, customer: nil, cid: nil, dotProduct))
+            }
+            for (cid, customer) in truck.GetSequence().enumerated() {
+                let dotProduct = DotProduct(source: source, target: self.Customers[customer]!, anchor: self.Depot)
+                data.append((truck: tid, customer: customer, cid: cid, dotProduct: dotProduct))
+            }
+        }
+        return data
+    }
+
     func LNS(individual: Routine, strictness: Double, destructionProbability: Double=0.3) -> Routine {
         var mutableIndividual = individual
         // Destruction phase.
@@ -217,8 +232,33 @@ class GeneticAlgorithm {
             mutableIndividual.SetTruckSequence(indexed: index, sequence: destroyedSequence.map({self.Customers[$0]!}), lut: self.distanceMatrix, capacity: self.benchmark.capacity)
         }
         // Repair phase:
-        return mutableIndividual
+        removedCustomers.shuffle()
+        var remaining = [Int]()
+        for customer in removedCustomers {
+            let point = self.Customers[customer]!
+            let candidateList = getLNSCandidateList(forInserting: point, into: mutableIndividual).sorted(by: {$0.dotProduct > $1.dotProduct})
+            if let candidate = SpinRouletteWheel(strictness: strictness, onCandidates: candidateList) {
+                mutableIndividual.AddCustomer(in: candidate.truck, customer: point, allCustomers: Array(Customers.values), 
+                lut: self.distanceMatrix, capacity:self.benchmark.capacity, atIndex: candidate.cid)
+            } else {
+                remaining.append(customer)
+            }
+        }
+        if remaining.isEmpty {
+            mutableIndividual.SetStrictness(strictness: strictness)
+            return mutableIndividual
+        }
+        return individual
     }
+
+    // #MARK: - Seleection
+    
+
+
+
+
+
+
 
     //#MARK: - DEBUG
     public func GetOffspring() -> [Routine] {

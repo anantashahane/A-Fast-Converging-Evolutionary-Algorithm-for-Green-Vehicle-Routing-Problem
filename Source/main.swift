@@ -15,7 +15,7 @@ func main() {
         for (index, individual) in ga.GetOffspring().enumerated() {
             print("------------------(\(index + 1))------------------")
             print(individual.description)
-            let mutara = ga.LNS(individual: individual, strictness: 7.24)
+            var mutara = ga.LNS(individual: individual, strictness: 7.24)
             print(mutara.description)
         }
     }

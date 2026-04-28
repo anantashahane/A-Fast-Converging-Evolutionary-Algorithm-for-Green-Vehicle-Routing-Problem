@@ -75,6 +75,9 @@ struct Truck: PointRepresentable {
     }
 
     private static func UpdateRepresentativePoint(sequence: [Point]) -> (x: Double, y: Double) {
+        if sequence.isEmpty {
+            return (x: 0.0, y: 0.0)
+        }
         let x = sequence.map({ $0.demand * $0.x }).reduce(0, +)
         let y = sequence.map({ $0.demand * $0.y }).reduce(0, +)
         let demand = sequence.map({ $0.demand }).reduce(0, +)
@@ -223,7 +226,7 @@ struct Routine {
     var frontNumber = 0
     
     public var description : String {
-        "Routine (strictness: \(self.strictness), fitness: \(self.GetFitness())):\n\t\(self.trucks.map({"\($0.GetSequence()) with demand \($0.GetDemand())"}).joined(separator: "\n\t"))"
+        "Routine (strictness: \(self.strictness), fitness: \(self.GetFitness())):\n\t\(self.trucks.map({"\($0.GetSequence()) with demand \($0.GetDemand()) at \($0.representativePoint())"}).joined(separator: "\n\t"))"
     }
     /// Creates a new routine with the given trucks.
     ///
@@ -291,6 +294,10 @@ struct Routine {
     mutating func GetAlphaforTruck(indexed: Int) -> Double {
         return self.trucks[indexed].GetAlpha()
     }
+
+    mutating func  AddCustomer(in truck: Int, customer: Point, allCustomers: [Point], lut: [[Double]], capacity: Double, atIndex: Int? = nil) {
+        self.trucks[truck].AddCustomer(customer: customer, allCustomers: allCustomers, lut: lut, capacity: capacity, atIndex: atIndex)
+    }
     
     /// Calculates the aggregated fitness of the routine across all objectives.
     ///
@@ -307,7 +314,7 @@ struct Routine {
         
         for objective in OptimisationObjective.allCases {
             for truck in trucks {
-                fitness[objective, default: 0] += truck.GetFitness(forObjective: objective) ?? 0
+                fitness[objective, default: 0] += truck.GetFitness(forObjective: objective) ?? Double.infinity
             }
         }
         return fitness
