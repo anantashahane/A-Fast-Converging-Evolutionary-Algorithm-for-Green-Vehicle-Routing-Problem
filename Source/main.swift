@@ -12,11 +12,9 @@ func main() {
     if let ga = ga {
         ga.InitialisePopulation()
         ga.EvaluatePopulation()
-        for (index, individual) in ga.GetOffspring().enumerated() {
-            print("------------------(\(index + 1))------------------")
-            print(individual.description)
-            var mutara = ga.LNS(individual: individual, strictness: 7.24)
-            print(mutara.description)
+        let population = ga.GetOffspring()
+        for index in 0..<population.count {
+            let crossover = ga.Crossover(parent1: population[index], parent2: population[(index + 1) % population.count])
         }
     }
     print("Took \(time) seconds to cook genetic algorithm.")

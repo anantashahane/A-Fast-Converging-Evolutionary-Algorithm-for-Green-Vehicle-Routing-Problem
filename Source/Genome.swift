@@ -112,8 +112,9 @@ struct Truck: PointRepresentable {
         if self.CanAccept(customer: customer, capacity: capacity) {
             if let index = atIndex {
                 self.sequence.insert(customer.id, at: index)
+            } else {
+                self.sequence.append(customer.id)
             }
-            self.sequence.append(customer.id)
             self.demand += customer.demand
             self.centerOfMass = Truck.UpdateRepresentativePoint(sequence: Array(allCustomers.filter({self.sequence.contains($0.id)})))
             self.alphaRange = Truck.UpdateAlphaRange(sequence: self.sequence, lut: lut)
@@ -206,7 +207,7 @@ struct Truck: PointRepresentable {
 /// A `Routine` aggregates multiple trucks and evaluates their combined fitness
 /// across all `OptimisationObjective` cases. It also stores metadata used for
 /// Pareto front ranking, such as dominance relationships.
-struct Routine {
+struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     
     /// The trucks that make up this routine.
     private var trucks: [Truck]
@@ -226,14 +227,19 @@ struct Routine {
     var frontNumber = 0
     
     public var description : String {
-        "Routine (strictness: \(self.strictness), fitness: \(self.GetFitness())):\n\t\(self.trucks.map({"\($0.GetSequence()) with demand \($0.GetDemand()) at \($0.representativePoint())"}).joined(separator: "\n\t"))"
+        let truck = self.trucks.sorted(by: {$0.GetSequence().count < $1.GetSequence().count})
+        return "Routine (strictness: \(self.strictness), fitness: \(self.GetFitness())):\n\t\(truck.map({"\($0.GetSequence()) with demand \($0.GetDemand()) at \($0.representativePoint())"}).joined(separator: "\n\t"))"
+    }
+
+    public var debugDescription : String {
+        self.description
     }
     /// Creates a new routine with the given trucks.
     ///
     /// - Parameter trucks: An array of `Truck` instances to include in the routine.
-    init(trucks: [Truck]) {
+    init(trucks: [Truck], strictness: Double? = nil) {
         self.trucks = trucks
-        self.strictness = 1.0
+        self.strictness = strictness ?? 1.0
     }
     
     /// Returns a unique identifier for the routine.
@@ -275,7 +281,7 @@ struct Routine {
         self.strictness = strictness
     }
 
-    mutating func GetStrictness() -> Double {
+    func GetStrictness() -> Double {
         return self.strictness
     }
 
@@ -295,8 +301,8 @@ struct Routine {
         return self.trucks[indexed].GetAlpha()
     }
 
-    mutating func  AddCustomer(in truck: Int, customer: Point, allCustomers: [Point], lut: [[Double]], capacity: Double, atIndex: Int? = nil) {
-        self.trucks[truck].AddCustomer(customer: customer, allCustomers: allCustomers, lut: lut, capacity: capacity, atIndex: atIndex)
+    mutating func  AddCustomer(in truck: Int, customer: Point, allCustomers: [Point], lut: [[Double]], capacity: Double, atIndex: Int? = nil) -> Bool {
+        return self.trucks[truck].AddCustomer(customer: customer, allCustomers: allCustomers, lut: lut, capacity: capacity, atIndex: atIndex)
     }
     
     /// Calculates the aggregated fitness of the routine across all objectives.

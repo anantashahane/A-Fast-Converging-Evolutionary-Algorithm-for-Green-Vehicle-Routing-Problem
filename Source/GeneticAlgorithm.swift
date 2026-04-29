@@ -200,7 +200,7 @@ class GeneticAlgorithm {
         return mutableIndividual
     }
 
-    private func getLNSCandidateList(forInserting source: Point, into individual: Routine) -> [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)] {
+    private func getRepairCandidates(forInserting source: Point, into individual: Routine) -> [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)] {
         var data = [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)]()
         for (tid, truck) in individual.GetTrucks() where truck.CanAccept(customer: source, capacity: self.benchmark.capacity) {
             if truck.GetSequence().isEmpty {
@@ -236,9 +236,9 @@ class GeneticAlgorithm {
         var remaining = [Int]()
         for customer in removedCustomers {
             let point = self.Customers[customer]!
-            let candidateList = getLNSCandidateList(forInserting: point, into: mutableIndividual).sorted(by: {$0.dotProduct > $1.dotProduct})
+            let candidateList = getRepairCandidates(forInserting: point, into: mutableIndividual).sorted(by: {$0.dotProduct > $1.dotProduct})
             if let candidate = SpinRouletteWheel(strictness: strictness, onCandidates: candidateList) {
-                mutableIndividual.AddCustomer(in: candidate.truck, customer: point, allCustomers: Array(Customers.values), 
+                let _ = mutableIndividual.AddCustomer(in: candidate.truck, customer: point, allCustomers: Array(Customers.values), 
                 lut: self.distanceMatrix, capacity:self.benchmark.capacity, atIndex: candidate.cid)
             } else {
                 remaining.append(customer)
@@ -251,7 +251,90 @@ class GeneticAlgorithm {
         return individual
     }
 
-    // #MARK: - Seleection
+    // #MARK: - Crossover
+    private func countRepeatingCustomers(in truck: Truck, assignedCustomers: [Int]) -> Int {
+        return truck.GetSequence().filter({assignedCustomers.contains($0) }).count
+    }
+    
+    func Crossover(parent1: Routine, parent2: Routine) -> Routine {
+    print("Crossover")
+    print(parent1)
+    print(" + ")
+    print(parent2)
+    print("--------------------------------")
+
+    let split = Int.random(in: 1...(self.benchmark.trucks / 2))
+    var assignedCustomers = Set<Int>()
+    var crossOverTrucks = [Truck]()
+
+    // --- Phase 1: take random trucks from parent1 ---
+    var p1Trucks: [Truck] = parent1.GetTrucks().map(\.element)
+    p1Trucks.shuffle()
+
+    for _ in 0..<split {
+        guard let truck = p1Trucks.popLast() else { break }
+
+        let uniqueSeq = truck.GetSequence().filter {
+            assignedCustomers.insert($0).inserted
+        }
+
+        let points = uniqueSeq.map { self.Customers[$0]! }
+        let newTruck = Truck(sequence: points, lut: distanceMatrix, capacity: self.benchmark.capacity)
+
+        crossOverTrucks.append(newTruck)
+    }
+
+    // --- Phase 2: fill from parent2 ---
+    let p2Trucks = parent2.GetTrucks().sorted {
+        countRepeatingCustomers(in: $0.element, assignedCustomers: Array(assignedCustomers)) <
+        countRepeatingCustomers(in: $1.element, assignedCustomers: Array(assignedCustomers))
+    }
+
+    for i in 0..<(self.benchmark.trucks - split) {
+        let sequence = p2Trucks[i].element.GetSequence().filter {
+            assignedCustomers.insert($0).inserted
+        }
+
+        let points = sequence.map { self.Customers[$0]! }
+        let truck = Truck(sequence: points, lut: distanceMatrix, capacity: self.benchmark.capacity)
+
+        crossOverTrucks.append(truck)
+    }
+
+    // --- Repair Phase ---
+    let strictness = (parent1.GetStrictness() + parent2.GetStrictness()) / 2
+    var returnRoutine = Routine(trucks: crossOverTrucks, strictness: strictness)
+
+    let remainingCustomers = self.Customers.keys.filter { !assignedCustomers.contains($0) }
+    for customer in remainingCustomers {
+        let point = Customers[customer]!
+        let candidates = getRepairCandidates(forInserting: point, into: returnRoutine)
+
+        if let candidate = SpinRouletteWheel(strictness: strictness, onCandidates: candidates) {
+            assignedCustomers.insert(customer)
+
+            _ = returnRoutine.AddCustomer(
+                in: candidate.truck,
+                customer: point,
+                allCustomers: Array(self.Customers.values),
+                lut: distanceMatrix,
+                capacity: self.benchmark.capacity,
+                atIndex: candidate.cid
+            )
+        }
+    }
+
+    // --- Final validation ---
+    let allCustomers = returnRoutine.GetTrucks().flatMap { $0.element.GetSequence() }
+
+    if Set(allCustomers).count == self.Customers.count {
+        print(returnRoutine)
+        return returnRoutine
+    }
+
+    print("Invalid offspring — falling back")
+    return Bool.random() ? parent1 : parent2
+}
     
 
 
