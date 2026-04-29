@@ -220,7 +220,7 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     var dominatesSetIndex = [Int]()
     
     /// The number of routines that dominate this routine.
-    var dominatedBy = 0
+    var dominatedByCount = 0
     
     /// The Pareto front rank of this routine.
     /// Lower values indicate better fronts (e.g., `0` is the best front).
@@ -324,5 +324,37 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
             }
         }
         return fitness
+    }
+
+
+    private static func compare(_ lhs: Routine, _ rhs: Routine) -> (dominates: Bool, strictlyDominates: Bool) {
+        let lhsFitness = lhs.GetFitness()
+        let rhsFitness = rhs.GetFitness()
+
+        var strictlyBetter = false
+
+        for objective in OptimisationObjective.allCases {
+            let l = lhsFitness[objective] ?? .infinity
+            let r = rhsFitness[objective] ?? .infinity
+            if l > r { return (false, false) }
+            if l < r { strictlyBetter = true }
+        }
+        return (true, strictlyBetter)
+    }
+
+    static func < (lhs: Routine, rhs: Routine) -> Bool {
+        Self.compare(lhs, rhs).strictlyDominates
+    }
+
+    static func <= (lhs: Routine, rhs: Routine) -> Bool {
+        Self.compare(lhs, rhs).dominates
+    }
+
+    static func > (lhs: Routine, rhs: Routine) -> Bool {
+        Self.compare(rhs, lhs).strictlyDominates
+    }
+
+    static func >= (lhs: Routine, rhs: Routine) -> Bool {
+        Self.compare(rhs, lhs).dominates
     }
 }

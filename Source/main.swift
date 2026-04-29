@@ -13,9 +13,9 @@ func main() {
         ga.InitialisePopulation()
         ga.EvaluatePopulation()
         let population = ga.GetOffspring()
-        for index in 0..<population.count {
-            let crossover = ga.Crossover(parent1: population[index], parent2: population[(index + 1) % population.count])
-        }
+        // for index in 0..<population.count {
+        //     // let crossover = ga.Crossover(parent1: population[index], parent2: population[(index + 1) % population.count])
+        // }
     }
     print("Took \(time) seconds to cook genetic algorithm.")
 }

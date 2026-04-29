@@ -1,4 +1,6 @@
 import Foundation
+
+//#MARK: - Genetic Algorithm Scafolding.
 ///Base Genetic Algorithm, doesn't do anything, but is a colection of mutations and private
 /// supporting functions.
 /// 
@@ -200,6 +202,28 @@ class GeneticAlgorithm {
         return mutableIndividual
     }
 
+    /// Computes a ranked list of candidate insertion positions for a given customer into a routing solution.
+    ///
+    /// This function evaluates all possible insertion points across all (broken) trucks in a given `Routine`,
+    /// filtering only those trucks that can feasibly accommodate the customer based on capacity constraints.
+    /// Each candidate insertion is scored using a dot product heuristic that measures spatial or cost efficiency
+    /// relative to the depot and existing route structure.
+    ///
+    /// Two types of insertion positions are considered:
+    /// - Insertion into empty trucks (no existing route).
+    /// - Insertion between consecutive customers in existing routes.
+    ///
+    /// - Parameters:
+    ///   - source: The customer `Point` to be inserted into the routing solution.
+    ///   - individual: The current routing solution containing upto `benchmark.trucks` number of trucks.
+    ///
+    /// - Returns: A list of candidate insertion options, each contains named tuples with names:
+    ///   - `truck`: The index of the truck considered.
+    ///   - `customer?`: The existing customer after which insertion is evaluated (nil for empty trucks).
+    ///   - `cid?`: The position index within the truck route (nil for empty trucks).
+    ///   - `dotProduct`: Heuristic score representing insertion quality (higher is better).
+    ///
+    /// - Complexity: O(n × m), where n is the number of trucks and m is the average route length.
     private func getRepairCandidates(forInserting source: Point, into individual: Routine) -> [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)] {
         var data = [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)]()
         for (tid, truck) in individual.GetTrucks() where truck.CanAccept(customer: source, capacity: self.benchmark.capacity) {
@@ -215,6 +239,26 @@ class GeneticAlgorithm {
         return data
     }
 
+    /// Performs a Large Neighborhood Search (LNS) optimization on a given routing solution.
+    ///
+    /// This method applies a two-phase heuristic:
+    /// - **Destruction phase**: randomly removes a subset of customers from the current solution based on a destruction probability.
+    /// - **Repair phase**: reinserts removed customers into the solution using a dot product based smart repair operation.
+    ///
+    /// The repair process evaluates multiple insertion positions across all trucks, ranking candidates by a heuristic score and selecting 
+    /// insertions using a roulette wheel strategy controlled by a strictness parameter.
+    ///
+    /// If all removed customers are successfully reinserted, the method updates the solution's strictness and returns the improved routine. 
+    /// Otherwise, it falls back to the original individual.
+    ///
+    /// - Parameters:
+    ///   - individual: The initial routing solution to be optimized.
+    ///   - strictness: Controls the selectiveness of the repair phase; higher values favor better-scoring insertions.
+    ///   - destructionProbability: Probability of removing each customer during the destruction phase (default is `0.3`).
+    ///
+    /// - Returns: A new `Routine` representing the optimized solution, or the original individual if repair fails.
+    ///
+    /// - Note: This method assumes all customers referenced in the routine exist in `self.Customers`.
     func LNS(individual: Routine, strictness: Double, destructionProbability: Double=0.3) -> Routine {
         var mutableIndividual = individual
         // Destruction phase.
@@ -256,90 +300,204 @@ class GeneticAlgorithm {
         return truck.GetSequence().filter({assignedCustomers.contains($0) }).count
     }
     
-    func Crossover(parent1: Routine, parent2: Routine) -> Routine {
-    print("Crossover")
-    print(parent1)
-    print(" + ")
-    print(parent2)
-    print("--------------------------------")
+    /// Performs crossover between two parent routing solutions to generate a new offspring solution.
+    ///
+    /// This genetic operator combines structural elements from two parents. 
+    /// Prior to crossover, the parent population should be randomly shuffled so that crossover is 
+    /// performed on non-deterministic adjacent pairs, improving genetic diversity.
+    ///
+    /// ### Phase 1: Random inheritance from parent1
+    /// A subset of trucks is randomly selected from `parent1`. Their customer sequences are filtered
+    /// to avoid duplicates and directly inserted into the offspring.
+    ///
+    /// ### Phase 2: Complementary inheritance from parent2
+    /// Remaining trucks are selected from `parent2`, prioritized by how few conflicts they introduce
+    /// with already assigned customers. Only non-duplicated customers are retained.
+    ///
+    /// ### Repair Phase
+    /// Any missing customers are reinserted using a heuristic candidate selection process combined with
+    /// a roulette-wheel selection strategy. The strictness parameter is averaged from both parents
+    /// to balance exploration and exploitation.
+    ///
+    /// ### Validation
+    /// The resulting offspring is validated to ensure all customers are present exactly once.
+    /// If validation fails, one of the parents is returned as a fallback.
+    ///
+    /// - Parameters:
+    ///   - parent1: First parent solution.
+    ///   - parent2: Second parent solution.
+    ///
+    /// - Returns: A new `Routine` representing the offspring, or one of the parents if validity fails.
+    ///
+    /// - Important: The method assumes route feasibility is enforced through `AddCustomer` and truck capacity constraints.
+    private func Crossover(parent1: Routine, parent2: Routine) -> Routine {
+        let split = Int.random(in: 1...(self.benchmark.trucks / 2))
+        var assignedCustomers = Set<Int>()
+        var crossOverTrucks = [Truck]()
 
-    let split = Int.random(in: 1...(self.benchmark.trucks / 2))
-    var assignedCustomers = Set<Int>()
-    var crossOverTrucks = [Truck]()
+        // --- Phase 1: take random trucks from parent1 ---
+        var p1Trucks: [Truck] = parent1.GetTrucks().map(\.element)
+        p1Trucks.shuffle()
 
-    // --- Phase 1: take random trucks from parent1 ---
-    var p1Trucks: [Truck] = parent1.GetTrucks().map(\.element)
-    p1Trucks.shuffle()
+        for _ in 0..<split {
+            guard let truck = p1Trucks.popLast() else { break }
 
-    for _ in 0..<split {
-        guard let truck = p1Trucks.popLast() else { break }
+            let uniqueSeq = truck.GetSequence().filter {
+                assignedCustomers.insert($0).inserted
+            }
 
-        let uniqueSeq = truck.GetSequence().filter {
-            assignedCustomers.insert($0).inserted
+            let points = uniqueSeq.map { self.Customers[$0]! }
+            let newTruck = Truck(sequence: points, lut: distanceMatrix, capacity: self.benchmark.capacity)
+
+            crossOverTrucks.append(newTruck)
         }
 
-        let points = uniqueSeq.map { self.Customers[$0]! }
-        let newTruck = Truck(sequence: points, lut: distanceMatrix, capacity: self.benchmark.capacity)
-
-        crossOverTrucks.append(newTruck)
-    }
-
-    // --- Phase 2: fill from parent2 ---
-    let p2Trucks = parent2.GetTrucks().sorted {
-        countRepeatingCustomers(in: $0.element, assignedCustomers: Array(assignedCustomers)) <
-        countRepeatingCustomers(in: $1.element, assignedCustomers: Array(assignedCustomers))
-    }
-
-    for i in 0..<(self.benchmark.trucks - split) {
-        let sequence = p2Trucks[i].element.GetSequence().filter {
-            assignedCustomers.insert($0).inserted
+        // --- Phase 2: fill from parent2 ---
+        let p2Trucks = parent2.GetTrucks().sorted {
+            countRepeatingCustomers(in: $0.element, assignedCustomers: Array(assignedCustomers)) <
+            countRepeatingCustomers(in: $1.element, assignedCustomers: Array(assignedCustomers))
         }
 
-        let points = sequence.map { self.Customers[$0]! }
-        let truck = Truck(sequence: points, lut: distanceMatrix, capacity: self.benchmark.capacity)
+        for i in 0..<(self.benchmark.trucks - split) {
+            let sequence = p2Trucks[i].element.GetSequence().filter {
+                assignedCustomers.insert($0).inserted
+            }
 
-        crossOverTrucks.append(truck)
+            let points = sequence.map { self.Customers[$0]! }
+            let truck = Truck(sequence: points, lut: distanceMatrix, capacity: self.benchmark.capacity)
+
+            crossOverTrucks.append(truck)
+        }
+
+        // --- Repair Phase ---
+        let strictness = (parent1.GetStrictness() + parent2.GetStrictness()) / 2
+        var returnRoutine = Routine(trucks: crossOverTrucks, strictness: strictness)
+
+        let remainingCustomers = self.Customers.keys.filter { !assignedCustomers.contains($0) }
+        for customer in remainingCustomers {
+            let point = Customers[customer]!
+            let candidates = getRepairCandidates(forInserting: point, into: returnRoutine)
+
+            if let candidate = SpinRouletteWheel(strictness: strictness, onCandidates: candidates) {
+                assignedCustomers.insert(customer)
+
+                _ = returnRoutine.AddCustomer(
+                    in: candidate.truck,
+                    customer: point,
+                    allCustomers: Array(self.Customers.values),
+                    lut: distanceMatrix,
+                    capacity: self.benchmark.capacity,
+                    atIndex: candidate.cid
+                )
+            }
+        }
+        let allCustomers = returnRoutine.GetTrucks().flatMap { $0.element.GetSequence() }
+
+        if Set(allCustomers).count == self.Customers.count {
+            return returnRoutine
+        }
+        return Bool.random() ? parent1 : parent2
     }
 
-    // --- Repair Phase ---
-    let strictness = (parent1.GetStrictness() + parent2.GetStrictness()) / 2
-    var returnRoutine = Routine(trucks: crossOverTrucks, strictness: strictness)
-
-    let remainingCustomers = self.Customers.keys.filter { !assignedCustomers.contains($0) }
-    for customer in remainingCustomers {
-        let point = Customers[customer]!
-        let candidates = getRepairCandidates(forInserting: point, into: returnRoutine)
-
-        if let candidate = SpinRouletteWheel(strictness: strictness, onCandidates: candidates) {
-            assignedCustomers.insert(customer)
-
-            _ = returnRoutine.AddCustomer(
-                in: candidate.truck,
-                customer: point,
-                allCustomers: Array(self.Customers.values),
-                lut: distanceMatrix,
-                capacity: self.benchmark.capacity,
-                atIndex: candidate.cid
-            )
+    func Crossover() {
+        self.parentPopulation.shuffle()
+        self.offspringPopulation = []
+        for i in 0..<self.parentPopulation.count {
+            let crossoverIndividual = Crossover(parent1: self.parentPopulation[i], parent2: self.parentPopulation[(i + 1) % self.parentPopulation.count])
+            self.offspringPopulation.append(crossoverIndividual)
         }
     }
 
-    // --- Final validation ---
-    let allCustomers = returnRoutine.GetTrucks().flatMap { $0.element.GetSequence() }
+    //#MARK: - Selection (NSGA-II)
+    private func FastNonDominatedSort() -> [[Routine]] {
+        var population = self.parentPopulation + self.offspringPopulation
+        var front = [Routine]()
+        for pid in 0..<population.count {
+            population[pid].dominatedByCount = 0
+            population[pid].dominatesSetIndex = []
+            for qid in 0..<population.count {
+                if population[pid] < population[qid] {
+                    population[pid].dominatesSetIndex.append(qid)
+                } else {
+                    population[qid].dominatedByCount += 1
+                }
+            }
+            if population[pid].dominatedByCount == 0 {
+                population[pid].rank = 1
+                population[pid].frontNumber = 1
+                front1.append(population[pid])
+            }
+        }
 
-    if Set(allCustomers).count == self.Customers.count {
-        print(returnRoutine)
-        return returnRoutine
+        var i = 0
+        fronts.append(front)
+        while !fronts[i].isEmpty {
+            front = []
+            for pid in 0..<fronts[i].count {
+                for qid in front[i][pid].dominatesSetIndex {
+                    population[qid].dominatedByCount -= 1
+                    if population[qid].dominatedByNumber == 0 {
+                        population[qid].rank = i + 2
+                        front.append(population[qid])
+                    }
+                }
+            }
+            i += 1
+            for j in 0..<front.count {
+                front[j].frontNumber += 1
+            }
+            fronts.append(front)
+        }
+        return fronts
     }
 
-    print("Invalid offspring — falling back")
-    return Bool.random() ? parent1 : parent2
-}
-    
+    private func CrowdingDistance(front: [Routine]) -> [Routine] {
+        if front.count <= 1 { return front }
+        var pop = front.map { ($0, 0.0) }
+        let length = front.count
 
+        let objectives = front[0].GetAllFitness().keys
 
+        for key in objectives {
 
+            let maxVal = front.map { $0.GetFitness(for: key) }.max()!
+            let minVal = front.map { $0.GetFitness(for: key) }.min()!
 
+            guard maxVal != minVal else { continue }
+
+            pop.sort { $0.0.GetFitness(for: key) < $1.0.GetFitness(for: key) }
+
+            pop[0].1 = Double.infinity
+            pop[length - 1].1 = Double.infinity
+
+            for i in 1..<length - 1 {
+                let prev = pop[i - 1].0.GetFitness(for: key)
+                let next = pop[i + 1].0.GetFitness(for: key)
+
+                pop[i].1 += (next - prev) / (maxVal - minVal)
+            }
+        }
+
+        return pop.sorted { $0.1 > $1.1 }.map { $0.0 }
+    }
+
+    func Selection() {
+        let fronts = FastNonDominatedSort()
+        var remainingPopulationSize = self.populationCount
+        parentPopulation = []
+        var finalFront = [Routine]()
+        for front in fronts {
+            if remainingPopulationSize - front.count > 0 {
+                remainingPopulationSize -= front.count
+                parentPopulation += front
+            } else {
+                finalFront = front
+                break
+            }
+        }
+        let population = CrowdingDistance(front: finalFront)
+        parentPopulation += population[0..<remainingPopulationSize]
+    }
 
 
 
