@@ -144,8 +144,8 @@ struct Truck: PointRepresentable {
         return vector
     }
     
-    func GetFitness(forObjective: OptimisationObjective) -> Double? {
-        return self.scores[forObjective]
+    func GetFitness(forObjective: OptimisationObjective) -> Double {
+        return self.scores[forObjective] ?? .infinity
     }
 
     func GetDemand() -> Double {
@@ -225,10 +225,12 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     /// The Pareto front rank of this routine.
     /// Lower values indicate better fronts (e.g., `0` is the best front).
     var frontNumber = 0
+
+    var rank = 0
     
     public var description : String {
         let truck = self.trucks.sorted(by: {$0.GetSequence().count < $1.GetSequence().count})
-        return "Routine (strictness: \(self.strictness), fitness: \(self.GetFitness())):\n\t\(truck.map({"\($0.GetSequence()) with demand \($0.GetDemand()) at \($0.representativePoint())"}).joined(separator: "\n\t"))"
+        return "Routine (strictness: \(self.strictness), fitness: \(self.GetAllFitness())):\n\t\(truck.map({"\($0.GetSequence()) with demand \($0.GetDemand()) at \($0.representativePoint())"}).joined(separator: "\n\t"))"
     }
 
     public var debugDescription : String {
@@ -315,21 +317,22 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     /// - Important: This method force unwraps the result of
     ///   `Truck.GetFitness(forObjective:)`. Ensure that method never returns `nil`
     ///   to avoid runtime crashes.
-    func GetFitness() -> [OptimisationObjective: Double] {
-        var fitness = [OptimisationObjective: Double]()
-        
+    func GetAllFitness() -> [OptimisationObjective: Double] {
+        var fitness = [OptimisationObjective:Double]()
         for objective in OptimisationObjective.allCases {
-            for truck in trucks {
-                fitness[objective, default: 0] += truck.GetFitness(forObjective: objective) ?? Double.infinity
-            }
+            fitness[objective] = self.trucks.map({$0.GetFitness(forObjective: objective)}).reduce(0, +)
         }
         return fitness
     }
 
+    func GetFitness(for objective: OptimisationObjective) -> Double {
+        return self.trucks.map({$0.GetFitness(forObjective: objective)}).reduce(0, +)
+    }
+
 
     private static func compare(_ lhs: Routine, _ rhs: Routine) -> (dominates: Bool, strictlyDominates: Bool) {
-        let lhsFitness = lhs.GetFitness()
-        let rhsFitness = rhs.GetFitness()
+        let lhsFitness = lhs.GetAllFitness()
+        let rhsFitness = rhs.GetAllFitness()
 
         var strictlyBetter = false
 

@@ -188,14 +188,9 @@ class GeneticAlgorithm {
                 sequence = _rotateLeft(sequence: sequence)
             }
 
-        case 0.5..<0.7:
-            sequence = _swap(sequence: sequence)
-
-        case 0.7..<0.85:
-            sequence = _rotateLeft(sequence: sequence)
-
-        default:
-            sequence = _reversed(sequence: sequence)
+        case 0.5..<0.7: sequence = _swap(sequence: sequence)
+        case 0.7..<0.85: sequence = _rotateLeft(sequence: sequence)
+        default: sequence = _reversed(sequence: sequence)
         }
 
         mutableIndividual.MutateTruckSequence(indexed: index, newSequence: sequence)
@@ -369,7 +364,7 @@ class GeneticAlgorithm {
             crossOverTrucks.append(truck)
         }
 
-        // --- Repair Phase ---
+        // ---Phase 3: Repair Phase ---
         let strictness = (parent1.GetStrictness() + parent2.GetStrictness()) / 2
         var returnRoutine = Routine(trucks: crossOverTrucks, strictness: strictness)
 
@@ -392,7 +387,6 @@ class GeneticAlgorithm {
             }
         }
         let allCustomers = returnRoutine.GetTrucks().flatMap { $0.element.GetSequence() }
-
         if Set(allCustomers).count == self.Customers.count {
             return returnRoutine
         }
@@ -412,6 +406,7 @@ class GeneticAlgorithm {
     private func FastNonDominatedSort() -> [[Routine]] {
         var population = self.parentPopulation + self.offspringPopulation
         var front = [Routine]()
+        var fronts = [[Routine]]()
         for pid in 0..<population.count {
             population[pid].dominatedByCount = 0
             population[pid].dominatesSetIndex = []
@@ -425,7 +420,7 @@ class GeneticAlgorithm {
             if population[pid].dominatedByCount == 0 {
                 population[pid].rank = 1
                 population[pid].frontNumber = 1
-                front1.append(population[pid])
+                front.append(population[pid])
             }
         }
 
@@ -434,9 +429,9 @@ class GeneticAlgorithm {
         while !fronts[i].isEmpty {
             front = []
             for pid in 0..<fronts[i].count {
-                for qid in front[i][pid].dominatesSetIndex {
+                for qid in fronts[i][pid].dominatesSetIndex {
                     population[qid].dominatedByCount -= 1
-                    if population[qid].dominatedByNumber == 0 {
+                    if population[qid].dominatedByCount == 0 {
                         population[qid].rank = i + 2
                         front.append(population[qid])
                     }
@@ -452,36 +447,47 @@ class GeneticAlgorithm {
     }
 
     private func CrowdingDistance(front: [Routine]) -> [Routine] {
-        if front.count <= 1 { return front }
-        var pop = front.map { ($0, 0.0) }
+        if front.count <= 1 { 
+            return front 
+        }
+        var pop = front.map { (individual: $0, distance: 0.0) }
         let length = front.count
-
-        let objectives = front[0].GetAllFitness().keys
-
+        let objectives = OptimisationObjective.allCases
         for key in objectives {
+            let maxVal = front.map { $0.GetFitness(for: key)}.max() ?? -1.0
+            let minVal = front.map { $0.GetFitness(for: key)}.min() ?? -1.0
 
-            let maxVal = front.map { $0.GetFitness(for: key) }.max()!
-            let minVal = front.map { $0.GetFitness(for: key) }.min()!
+            guard (maxVal != minVal && maxVal > 0 && minVal > 0) else { continue }
 
-            guard maxVal != minVal else { continue }
+            pop.sort { $0.individual.GetFitness(for: key) < $1.individual.GetFitness(for: key) }
 
-            pop.sort { $0.0.GetFitness(for: key) < $1.0.GetFitness(for: key) }
-
-            pop[0].1 = Double.infinity
-            pop[length - 1].1 = Double.infinity
+            pop[0].distance = Double.infinity
+            pop[length - 1].distance = Double.infinity
 
             for i in 1..<length - 1 {
-                let prev = pop[i - 1].0.GetFitness(for: key)
-                let next = pop[i + 1].0.GetFitness(for: key)
-
-                pop[i].1 += (next - prev) / (maxVal - minVal)
+                let prev = pop[i - 1].individual.GetFitness(for: key)
+                let next = pop[i + 1].individual.GetFitness(for: key)
+                pop[i].distance += (next - prev) / (maxVal - minVal)
             }
         }
 
-        return pop.sorted { $0.1 > $1.1 }.map { $0.0 }
+        return pop.sorted(by: { $0.distance > $1.distance }).map({ $0.individual })
     }
 
-    func Selection() {
+    /// Performs the selection step of the NSGA-II algorithm.
+    ///
+    /// This method combines the current parent and offspring populations,
+    /// then applies non-dominated sorting to rank solutions into Pareto fronts.
+    /// Within each front, individuals are ordered using crowding distance
+    /// to preserve diversity.
+    ///
+    /// The next generation is formed by selecting the best individuals
+    /// based on rank and crowding distance until the population size is met.
+    ///
+    /// - Important: Fitness values must already be evaluated for all
+    ///   individuals in both the parent and offspring populations
+    ///   before calling this method.
+func selection() {
         let fronts = FastNonDominatedSort()
         var remainingPopulationSize = self.populationCount
         parentPopulation = []
@@ -499,12 +505,8 @@ class GeneticAlgorithm {
         parentPopulation += population[0..<remainingPopulationSize]
     }
 
-
-
     //#MARK: - DEBUG
     public func GetOffspring() -> [Routine] {
         return self.offspringPopulation
     }
 }
-
-
