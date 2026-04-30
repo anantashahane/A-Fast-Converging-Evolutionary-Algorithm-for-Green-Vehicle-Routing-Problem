@@ -109,12 +109,14 @@ extension Double {
     }
 
     static func RandomNumber(center : Double, upperBound : Double, seed : Double? = nil) throws -> Double {
+        var mutableCenter = center
         if upperBound < 0 {
-            print("RNG Error: Upperbound (\(upperBound)) set lower than 0.")
+            // print("RNG Error: Upperbound (\(upperBound)) set lower than 0.")
             throw RNGError.invalidUpperBound
         }
         if center >= upperBound || center <= 0 {
-            print("RNG Error: Center (\(center)) out of range [0, \(upperBound)).")
+            // print("RNG Error: Center (\(center)) out of range [0, \(upperBound)).")
+            mutableCenter = upperBound / 2
         }
         var val = 0.0
         if let seed = seed {
@@ -122,15 +124,15 @@ extension Double {
         } else {
             val = Double.random(in: 0...1)
         }
-        let frontRatio = center / upperBound
+        let frontRatio = mutableCenter / upperBound
         if val < frontRatio {
             val = val / frontRatio - 1
             let unscaled = asin(val) + (Double.pi / 2)
-            return 2 * unscaled * center / Double.pi
+            return 2 * unscaled * mutableCenter / Double.pi
         } else {
             val = (val - frontRatio) / (1 - frontRatio)
             let unscaled = asin(val)
-            return center + (2 * unscaled * (upperBound - center)) / Double.pi
+            return mutableCenter + (2 * unscaled * (upperBound - mutableCenter)) / Double.pi
         }
     }
 }

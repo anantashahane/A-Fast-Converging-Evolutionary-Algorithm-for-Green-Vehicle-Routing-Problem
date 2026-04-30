@@ -20,6 +20,9 @@ class GeneticAlgorithm {
     internal var parentPopulation = [Routine]()
     internal var offspringPopulation = [Routine]()
 
+    internal var fronts = [[Routine]]()
+    internal var generation = 0
+
     init(benchmark: Benchmark, populationCount: Int, iterations: Int) {
         self.benchmark = benchmark
         self.populationCount = populationCount
@@ -38,7 +41,7 @@ class GeneticAlgorithm {
     func InitialisePopulation() {
         var attempts = 0
         while self.parentPopulation.count < self.populationCount {
-            if let individual = self.initialiseIndividual(strictness: (100 * Double(self.offspringPopulation.count) / Double(populationCount))) {
+            if let individual = self.initialiseIndividual() {
                 self.parentPopulation.append(individual)
                 attempts += 1
             }
@@ -414,9 +417,9 @@ class GeneticAlgorithm {
 
     //#MARK: - Selection (NSGA-II)
     private func FastNonDominatedSort() -> [[Routine]] {
+        fronts = []
         var population = self.parentPopulation + self.offspringPopulation
         var front = [Routine]()
-        var fronts = [[Routine]]()
         for pid in 0..<population.count {
             population[pid].dominatedByCount = 0
             population[pid].dominatesSetIndex = []
@@ -500,7 +503,7 @@ class GeneticAlgorithm {
 func Selection() {
         let fronts = FastNonDominatedSort()
         var remainingPopulationSize = self.populationCount
-        parentPopulation = []
+        self.parentPopulation = []
         var finalFront = [Routine]()
         for front in fronts {
             if remainingPopulationSize - front.count > 0 {
@@ -512,7 +515,8 @@ func Selection() {
             }
         }
         let population = CrowdingDistance(front: finalFront)
-        parentPopulation += population[0..<remainingPopulationSize]
+        self.parentPopulation += population[0..<remainingPopulationSize]
+        self.generation += 1
     }
 
     //#MARK: - DEBUG

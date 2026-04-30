@@ -14,7 +14,7 @@ func main() {
         }
     }
     for routine in routines {
-        print(routine)
+        print(routine.GetID())
     }
     print("Took \(time) seconds to cook genetic algorithm.")
 }

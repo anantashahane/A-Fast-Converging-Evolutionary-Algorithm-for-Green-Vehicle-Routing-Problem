@@ -57,21 +57,22 @@ struct Truck: PointRepresentable {
 
     private static func UpdateAlphaRange(sequence: [Int], lut: [[Double]]) -> (min: Double, max: Double) {
         if sequence.count <= 2 {
-            return (min: 1, max: 1)
+            return (min: 0.1, max: 1)
         }
+        let epsilon = 1e-6
         var minVal: Double? = nil
         var maxVal: Double? = nil
         for point1 in sequence {
             for point2 in sequence where point1 != point2 {
                 let dist = lut[point1][point2] 
-                minVal = min(minVal ?? dist, dist)
-                maxVal = max(maxVal ?? dist, dist)
+                minVal = max(min(minVal ?? dist, dist), epsilon)
+                maxVal = max(max(maxVal ?? dist, dist), epsilon)
             }
         }
         if let minVal = minVal, let maxVal = maxVal {
             return (min: minVal / maxVal, max: maxVal / minVal)
         }
-        return (min: 1, max: 1)
+        return (min: 0.1, max: 1)
     }
 
     private static func UpdateRepresentativePoint(sequence: [Point]) -> (x: Double, y: Double) {
@@ -251,7 +252,7 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     ///
     /// - Returns: A string representing the combined truck IDs.
     func GetID() -> String {
-        self.trucks.map { $0.GetID() }.joined(separator: ",")
+        self.trucks.map({ $0.GetID() }).sorted().joined(separator: ",")
     }
     
     /// Returns the trucks in this routine as an enumerated sequence.
