@@ -13,3 +13,8 @@ protocol PointRepresentable {
     /// - Returns: A tuple `(x, y)` describing the representative position.
     func representativePoint() -> (x: Double, y: Double)
 }
+
+
+protocol Runnable {
+    func run() -> [Routine]
+}

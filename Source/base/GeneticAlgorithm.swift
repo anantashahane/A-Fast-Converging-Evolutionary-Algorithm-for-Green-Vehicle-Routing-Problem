@@ -7,9 +7,9 @@ import Foundation
 /// 
 class GeneticAlgorithm {
     // Configuration parameters
-    private let benchmark : Benchmark
-    private let iterations: Int
-    private let populationCount : Int
+    internal let benchmark : Benchmark
+    internal let iterations: Int
+    internal let populationCount : Int
     
     // LUTs
     private let distanceMatrix: [[Double]]
@@ -17,8 +17,8 @@ class GeneticAlgorithm {
     private let Customers : Dictionary<Int, Point>
 
     //Runtime Variables.
-    private var parentPopulation = [Routine]()
-    private var offspringPopulation = [Routine]()
+    internal var parentPopulation = [Routine]()
+    internal var offspringPopulation = [Routine]()
 
     init(benchmark: Benchmark, populationCount: Int, iterations: Int) {
         self.benchmark = benchmark
@@ -35,15 +35,14 @@ class GeneticAlgorithm {
     }
 
     // #MARK: - Initialisation
-    func InitialisePopulation() -> [Routine] {
+    func InitialisePopulation() {
         var attempts = 0
-        while self.offspringPopulation.count < self.populationCount {
-            if let individual = self.initialiseIndividual() {
-                self.offspringPopulation.append(individual)
+        while self.parentPopulation.count < self.populationCount {
+            if let individual = self.initialiseIndividual(strictness: (100 * Double(self.offspringPopulation.count) / Double(populationCount))) {
+                self.parentPopulation.append(individual)
                 attempts += 1
             }
         }
-        return self.offspringPopulation
     }
 
     private func initialiseIndividual(strictness: Double = 100) -> Routine? {
@@ -109,7 +108,14 @@ class GeneticAlgorithm {
         }
     }
 
-    func EvaluatePopulation() {
+    func EvaluatePopulation(parent: Bool = false) {
+        if parent {
+            for index in 0..<self.parentPopulation.count {
+                self.EvaluateIndividualDistance(individual: &parentPopulation[index])
+                self.EvaluateIndividualFuel(individual: &parentPopulation[index])
+            }
+            return
+        }
         for index in 0..<self.offspringPopulation.count {
             self.EvaluateIndividualDistance(individual: &offspringPopulation[index])
             self.EvaluateIndividualFuel(individual: &offspringPopulation[index])
@@ -140,9 +146,13 @@ class GeneticAlgorithm {
     }
     
 
-    func IntraVehicularMutation(individual: Routine, strictness: Double) -> Routine {
+    func IntraVehicularMutation(individual: Routine, strictness: Double? = nil) -> Routine {
         var mutableIndividual = individual
-        mutableIndividual.SetStrictness(strictness: strictness)
+        if let strictness = strictness {
+            mutableIndividual.SetStrictness(strictness: strictness)
+        } else {
+            _ = mutableIndividual.UpdateStrictness(upperBound: Double(self.benchmark.points.count))
+        }
         
         guard let (index, truck) = individual.GetTrucks().randomElement() else {
             return individual
@@ -182,7 +192,7 @@ class GeneticAlgorithm {
                 distanceMatrix[sequence[start]][$0.element] <= searchParameter
             }
             
-            if let (end, _) = SpinRouletteWheel(strictness: strictness, onCandidates: candidates) {
+            if let (end, _) = SpinRouletteWheel(strictness: mutableIndividual.GetStrictness(), onCandidates: candidates) {
                 sequence[start...end].reverse()
             } else {
                 sequence = _rotateLeft(sequence: sequence)
@@ -413,8 +423,8 @@ class GeneticAlgorithm {
             for qid in 0..<population.count {
                 if population[pid] < population[qid] {
                     population[pid].dominatesSetIndex.append(qid)
-                } else {
-                    population[qid].dominatedByCount += 1
+                } else if population[qid] < population[pid] {
+                    population[pid].dominatedByCount += 1
                 }
             }
             if population[pid].dominatedByCount == 0 {
@@ -487,7 +497,7 @@ class GeneticAlgorithm {
     /// - Important: Fitness values must already be evaluated for all
     ///   individuals in both the parent and offspring populations
     ///   before calling this method.
-func selection() {
+func Selection() {
         let fronts = FastNonDominatedSort()
         var remainingPopulationSize = self.populationCount
         parentPopulation = []
