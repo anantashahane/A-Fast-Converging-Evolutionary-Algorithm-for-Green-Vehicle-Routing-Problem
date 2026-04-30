@@ -149,13 +149,9 @@ class GeneticAlgorithm {
     }
     
 
-    func IntraVehicularMutation(individual: Routine, strictness: Double? = nil) -> Routine {
+    func IntraVehicularMutation(individual: Routine) -> Routine {
         var mutableIndividual = individual
-        if let strictness = strictness {
-            mutableIndividual.SetStrictness(strictness: strictness)
-        } else {
-            _ = mutableIndividual.UpdateStrictness(upperBound: Double(self.benchmark.points.count))
-        }
+        let strictness = individual.GetStrictness()
         
         guard let (index, truck) = individual.GetTrucks().randomElement() else {
             return individual
@@ -195,7 +191,7 @@ class GeneticAlgorithm {
                 distanceMatrix[sequence[start]][$0.element] <= searchParameter
             }
             
-            if let (end, _) = SpinRouletteWheel(strictness: mutableIndividual.GetStrictness(), onCandidates: candidates) {
+            if let (end, _) = SpinRouletteWheel(strictness: strictness, onCandidates: candidates) {
                 sequence[start...end].reverse()
             } else {
                 sequence = _rotateLeft(sequence: sequence)

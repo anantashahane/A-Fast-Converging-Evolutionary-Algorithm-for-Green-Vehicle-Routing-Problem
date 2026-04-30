@@ -55,7 +55,7 @@ func DotProduct(source: PointRepresentable, target: PointRepresentable, anchor: 
     let v2 = (x: p2.x - a.x, y: p2.y - a.y)
     
     let targetLength = sqrt((v2.x * v2.x) + (v2.y * v2.y))
-    return ((v1.x * v2.x) + (v1.y * v2.y)) / (dist * targetLength)
+    return ((v1.x * v2.x) + (v1.y * v2.y)) * 100 / (dist * targetLength)
 }
 
 func GenerateRouletteWheel(strictness: Double, length: Int) -> [Double] {

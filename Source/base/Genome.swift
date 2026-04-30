@@ -273,12 +273,12 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
         trucks[index] = truck
     }
 
-    mutating func UpdateStrictness(upperBound: Double) -> Double {
-        if let strictness = try? Double.RandomNumber(center: self.strictness, upperBound: upperBound) {
-            self.strictness = strictness
-        }
-        return strictness
-    }
+    // mutating func UpdateStrictness(upperBound: Double) -> Double {
+    //     if let strictness = try? Double.RandomNumber(center: self.strictness, upperBound: upperBound) {
+    //         self.strictness = strictness
+    //     }
+    //     return strictness
+    // }
 
     mutating func SetStrictness(strictness: Double) {
         self.strictness = strictness
