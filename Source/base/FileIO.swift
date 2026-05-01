@@ -12,7 +12,7 @@ enum PointKind {
 ///
 /// Each point represents a node with an identifier, spatial coordinates,
 /// and an associated demand value used in routing / optimization problems.
-struct Point: Decodable, PointRepresentable {
+struct Point: Codable, PointRepresentable {
     /// Unique identifier for the point.
     let id: Int
     /// X-coordinate in 2D space.
@@ -36,7 +36,7 @@ struct Point: Decodable, PointRepresentable {
 /// This structure describes a full problem instance including metadata
 /// (name, capacity constraints, optimality reference) and a list of points
 /// that define the spatial problem space.
-struct Benchmark: Decodable {
+struct Benchmark: Codable {
     /// Name identifier of the benchmark dataset.
     let name: String
     /// Category of the benchmark.

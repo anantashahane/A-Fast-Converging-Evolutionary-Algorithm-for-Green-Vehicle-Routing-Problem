@@ -5,7 +5,7 @@
 ///
 /// Conforms to `CaseIterable` to allow iteration over all objectives
 /// (useful for benchmarking and experiment sweeps).
-enum OptimisationObjective: String, CaseIterable, CustomDebugStringConvertible {
+enum OptimisationObjective: String, CaseIterable, CustomDebugStringConvertible, Encodable {
     /// Total travel distance.
     case Distance
     /// Estimated fuel consumption.
@@ -19,7 +19,7 @@ enum OptimisationObjective: String, CaseIterable, CustomDebugStringConvertible {
 }
 
 //#MARK: - Truck
-struct Truck: PointRepresentable {
+struct Truck: PointRepresentable, Encodable {
     /// Ordered sequence of customer IDs representing the route.
     ///
     /// - Note: Must only contain customer IDs. Depot is excluded.
@@ -38,6 +38,11 @@ struct Truck: PointRepresentable {
     /// Evaluation scores for different optimisation objectives.
     private var scores: Dictionary<OptimisationObjective, Double>
 
+    enum CodingKeys : String, CodingKey {
+        case sequence
+        case alpha
+        case scores = "fitness"
+    }
     /// Creates a truck from a sequence of points.
     ///
     /// - Parameters:
@@ -208,7 +213,7 @@ struct Truck: PointRepresentable {
 /// A `Routine` aggregates multiple trucks and evaluates their combined fitness
 /// across all `OptimisationObjective` cases. It also stores metadata used for
 /// Pareto front ranking, such as dominance relationships.
-struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
+struct Routine : CustomStringConvertible, CustomDebugStringConvertible, Encodable {
     
     /// The trucks that make up this routine.
     private var trucks: [Truck]
@@ -217,6 +222,7 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     /// Defaults to `1.0`.
     private var strictness: Double
     
+    var generation : Int
     /// Indices of routines that this routine dominates.
     var dominatesSetIndex = [Int]()
     
@@ -228,6 +234,12 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     var frontNumber = 0
 
     var rank = 0
+
+    enum CodingKeys : String, CodingKey {
+        case trucks
+        case strictness
+        case generation
+    } 
     
     public var description : String {
         let truck = self.trucks.sorted(by: {$0.GetSequence().count < $1.GetSequence().count})
@@ -240,8 +252,9 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     /// Creates a new routine with the given trucks.
     ///
     /// - Parameter trucks: An array of `Truck` instances to include in the routine.
-    init(trucks: [Truck], strictness: Double? = nil) {
+    init(trucks: [Truck], generation: Int, strictness: Double? = nil) {
         self.trucks = trucks
+        self.generation = generation
         self.strictness = strictness ?? 1.0
     }
     

@@ -16,5 +16,5 @@ protocol PointRepresentable {
 
 
 protocol Runnable {
-    func run() -> [Routine]
+    func run() -> (history: [Routine], front: [Routine])
 }

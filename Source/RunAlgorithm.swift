@@ -23,7 +23,7 @@ extension GeneticAlgorithm : Runnable {
         }
     }
 
-    func run() -> [Routine] {
+    func run() -> (history: [Routine], front: [Routine])  {
         // print("Initialise")
         InitialisePopulation()
         // print("Evaluate parent")
@@ -43,10 +43,11 @@ extension GeneticAlgorithm : Runnable {
             print("Gen \(index) (\((minDistance * 100 / self.benchmark.optimality) - 100)% conv.): Optimal Dist: \(self.benchmark.optimality), front: [\(minDistance) km, \(minFuel) l], ", terminator: "")
             print(" Unique parents: \(Set(self.parentPopulation.map({$0.GetID()})).count), Unique Children: \(Set(self.offspringPopulation.map({$0.GetID()})).count))")
         }
-        return Array(
+        let front = Array(
             Dictionary(self.fronts[0].map { ($0.GetID(), $0) },
                     uniquingKeysWith: { first, _ in first }
             ).values
-)
+        )
+        return (history: self.history, front: front)
     }
 }

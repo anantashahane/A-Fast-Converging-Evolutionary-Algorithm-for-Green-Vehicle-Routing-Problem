@@ -20,6 +20,7 @@ class GeneticAlgorithm {
     internal var parentPopulation = [Routine]()
     internal var offspringPopulation = [Routine]()
 
+    internal var history = [Routine]()
     internal var fronts = [[Routine]]()
     internal var generation = 0
 
@@ -77,7 +78,7 @@ class GeneticAlgorithm {
             trucks.append(truck)
         }
         if remainingCustomers.isEmpty {
-            return Routine(trucks: trucks)
+            return Routine(trucks: trucks, generation: self.generation)
         }
         return nil
     }
@@ -116,12 +117,14 @@ class GeneticAlgorithm {
             for index in 0..<self.parentPopulation.count {
                 self.EvaluateIndividualDistance(individual: &parentPopulation[index])
                 self.EvaluateIndividualFuel(individual: &parentPopulation[index])
+                self.history.append(parentPopulation[index])
             }
             return
         }
         for index in 0..<self.offspringPopulation.count {
             self.EvaluateIndividualDistance(individual: &offspringPopulation[index])
             self.EvaluateIndividualFuel(individual: &offspringPopulation[index])
+                self.history.append(offspringPopulation[index])
         }
     }
 
@@ -380,7 +383,7 @@ class GeneticAlgorithm {
 
         // ---Phase 3: Repair Phase ---
         let strictness = (parent1.GetStrictness() + parent2.GetStrictness()) / 2
-        var returnRoutine = Routine(trucks: crossOverTrucks, strictness: strictness)
+        var returnRoutine = Routine(trucks: crossOverTrucks, generation: self.generation, strictness: strictness)
 
         let remainingCustomers = self.Customers.keys.filter { !assignedCustomers.contains($0) }
         for customer in remainingCustomers {
