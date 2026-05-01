@@ -19,7 +19,7 @@ enum OptimisationObjective: String, CaseIterable, CustomDebugStringConvertible, 
 }
 
 //#MARK: - Truck
-struct Truck: PointRepresentable, Encodable {
+struct Truck: PointRepresentable {
     /// Ordered sequence of customer IDs representing the route.
     ///
     /// - Note: Must only contain customer IDs. Depot is excluded.
@@ -38,11 +38,6 @@ struct Truck: PointRepresentable, Encodable {
     /// Evaluation scores for different optimisation objectives.
     private var scores: Dictionary<OptimisationObjective, Double>
 
-    enum CodingKeys : String, CodingKey {
-        case sequence
-        case alpha
-        case scores = "fitness"
-    }
     /// Creates a truck from a sequence of points.
     ///
     /// - Parameters:
@@ -124,6 +119,7 @@ struct Truck: PointRepresentable, Encodable {
             self.demand += customer.demand
             self.centerOfMass = Truck.UpdateRepresentativePoint(sequence: Array(allCustomers.filter({self.sequence.contains($0.id)})))
             self.alphaRange = Truck.UpdateAlphaRange(sequence: self.sequence, lut: lut)
+            self.scores = [:]
             return true
         }
         return false
@@ -153,6 +149,11 @@ struct Truck: PointRepresentable, Encodable {
     func GetFitness(forObjective: OptimisationObjective) -> Double {
         return self.scores[forObjective] ?? .infinity
     }
+
+    func GetAllFitness() -> [OptimisationObjective : Double] {
+        return self.scores
+    }
+
 
     func GetDemand() -> Double {
         return self.demand
@@ -203,6 +204,7 @@ struct Truck: PointRepresentable, Encodable {
     mutating func MutateSequence(newSequence: [Int]) {
         assert("\(self.sequence.sorted())" == "\(newSequence.sorted())", "Expected no change in the customers being served by truck.")
         self.sequence = newSequence
+        self.scores = [:]
     }
 }
 
@@ -213,7 +215,7 @@ struct Truck: PointRepresentable, Encodable {
 /// A `Routine` aggregates multiple trucks and evaluates their combined fitness
 /// across all `OptimisationObjective` cases. It also stores metadata used for
 /// Pareto front ranking, such as dominance relationships.
-struct Routine : CustomStringConvertible, CustomDebugStringConvertible, Encodable {
+struct Routine : CustomStringConvertible, CustomDebugStringConvertible {
     
     /// The trucks that make up this routine.
     private var trucks: [Truck]
@@ -234,12 +236,6 @@ struct Routine : CustomStringConvertible, CustomDebugStringConvertible, Encodabl
     var frontNumber = 0
 
     var rank = 0
-
-    enum CodingKeys : String, CodingKey {
-        case trucks
-        case strictness
-        case generation
-    } 
     
     public var description : String {
         let truck = self.trucks.sorted(by: {$0.GetSequence().count < $1.GetSequence().count})
