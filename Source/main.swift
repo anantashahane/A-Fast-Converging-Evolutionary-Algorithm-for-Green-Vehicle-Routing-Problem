@@ -21,7 +21,7 @@ func RunExperiment(containingName: String?, index: Int = 1, populationCount: Int
                 results = ga.run()
             }
             let experimentInfo = ExperimentInformation(
-                name: "test-1",
+                name: "Depot-Anchoring",
                 runNumber: index,
                 populationSize: populationCount,
                 iterationCount: iterations,

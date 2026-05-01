@@ -18,7 +18,7 @@ extension GeneticAlgorithm : Runnable {
             switch Double.random(in: 0...1) {
                 case ...0.3: offspringPopulation[index]  = IntraVehicularMutation(individual: individual)
                 default: let destructionProbability = Double.random(in: 0.1...0.6)
-                offspringPopulation[index] = LNS(individual: individual, destructionProbability: destructionProbability, dynamicAnchoring: destructionProbability < 0.3)
+                offspringPopulation[index] = LNS(individual: individual, destructionProbability: destructionProbability, dynamicAnchoring: false)
             }
         }
     }
