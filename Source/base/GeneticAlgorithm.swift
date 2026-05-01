@@ -228,16 +228,20 @@ class GeneticAlgorithm {
     ///   - `dotProduct`: Heuristic score representing insertion quality (higher is better).
     ///
     /// - Complexity: O(n × m), where n is the number of trucks and m is the average route length.
-    private func getRepairCandidates(forInserting source: Point, into individual: Routine) -> [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)] {
+    private func getRepairCandidates(forInserting source: Point, into individual: Routine, dynamicAnchoring: Bool = false) -> [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)] {
         var data = [(truck: Int, customer: Int?, cid: Int?, dotProduct: Double)]()
         for (tid, truck) in individual.GetTrucks() where truck.CanAccept(customer: source, capacity: self.benchmark.capacity) {
             if truck.GetSequence().isEmpty {
                 let dotProduct = DotProduct(source: source, target: truck, anchor: self.Depot)
                 data.append((truck: tid, customer: nil, cid: nil, dotProduct))
             }
+            var previous = self.Depot
             for (cid, customer) in truck.GetSequence().enumerated() {
-                let dotProduct = DotProduct(source: source, target: self.Customers[customer]!, anchor: self.Depot)
+                let dotProduct = DotProduct(source: source, target: self.Customers[customer]!, anchor: previous)
                 data.append((truck: tid, customer: customer, cid: cid, dotProduct: dotProduct))
+                if dynamicAnchoring {
+                    previous = self.Customers[customer]!
+                }
             }
         }
         return data
@@ -263,7 +267,8 @@ class GeneticAlgorithm {
     /// - Returns: A new `Routine` representing the optimized solution, or the original individual if repair fails.
     ///
     /// - Note: This method assumes all customers referenced in the routine exist in `self.Customers`.
-    func LNS(individual: Routine, strictness: Double, destructionProbability: Double=0.3) -> Routine {
+    func LNS(individual: Routine, destructionProbability: Double=0.3, dynamicAnchoring: Bool = false) -> Routine {
+        let strictness = individual.GetStrictness()
         var mutableIndividual = individual
         // Destruction phase.
         var removedCustomers = [Int]()
@@ -284,7 +289,7 @@ class GeneticAlgorithm {
         var remaining = [Int]()
         for customer in removedCustomers {
             let point = self.Customers[customer]!
-            let candidateList = getRepairCandidates(forInserting: point, into: mutableIndividual).sorted(by: {$0.dotProduct > $1.dotProduct})
+            let candidateList = getRepairCandidates(forInserting: point, into: mutableIndividual, dynamicAnchoring: dynamicAnchoring).sorted(by: {$0.dotProduct > $1.dotProduct})
             if let candidate = SpinRouletteWheel(strictness: strictness, onCandidates: candidateList) {
                 let _ = mutableIndividual.AddCustomer(in: candidate.truck, customer: point, allCustomers: Array(Customers.values), 
                 lut: self.distanceMatrix, capacity:self.benchmark.capacity, atIndex: candidate.cid)

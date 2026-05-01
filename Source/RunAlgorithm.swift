@@ -17,7 +17,8 @@ extension GeneticAlgorithm : Runnable {
         for (index, individual) in self.offspringPopulation.enumerated() {
             switch Double.random(in: 0...1) {
                 case ...0.3: offspringPopulation[index]  = IntraVehicularMutation(individual: individual)
-                default: offspringPopulation[index] = LNS(individual: individual, strictness: 10, destructionProbability: Double.random(in: 0.2...0.6))
+                default: let destructionProbability = Double.random(in: 0.1...0.6)
+                offspringPopulation[index] = LNS(individual: individual, destructionProbability: destructionProbability, dynamicAnchoring: destructionProbability < 0.3)
             }
         }
     }
@@ -42,6 +43,10 @@ extension GeneticAlgorithm : Runnable {
             print("Gen \(index) (\((minDistance * 100 / self.benchmark.optimality) - 100)% conv.): Optimal Dist: \(self.benchmark.optimality), front: [\(minDistance) km, \(minFuel) l], ", terminator: "")
             print(" Unique parents: \(Set(self.parentPopulation.map({$0.GetID()})).count), Unique Children: \(Set(self.offspringPopulation.map({$0.GetID()})).count))")
         }
-        return self.parentPopulation
+        return Array(
+            Dictionary(self.fronts[0].map { ($0.GetID(), $0) },
+                    uniquingKeysWith: { first, _ in first }
+            ).values
+)
     }
 }
