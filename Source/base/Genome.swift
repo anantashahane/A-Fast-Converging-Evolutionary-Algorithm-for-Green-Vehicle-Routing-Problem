@@ -5,17 +5,17 @@
 ///
 /// Conforms to `CaseIterable` to allow iteration over all objectives
 /// (useful for benchmarking and experiment sweeps).
-enum OptimisationObjective: String, CaseIterable, CustomDebugStringConvertible, Encodable {
+enum OptimisationObjective: String, CaseIterable, Codable {
     /// Total travel distance.
     case Distance
     /// Estimated fuel consumption.
     case Fuel
-    var description: String {
-        self.rawValue
-    }
-    var debugDescription: String {
-        description
-    }
+    // var description: String {
+    //     self.rawValue
+    // }
+    // var debugDescription: String {
+    //     description
+    // }
 }
 
 //#MARK: - Truck
@@ -150,7 +150,7 @@ struct Truck: PointRepresentable {
         return self.scores[forObjective] ?? .infinity
     }
 
-    func GetAllFitness() -> [OptimisationObjective : Double] {
+    func GetAllFitness() -> Dictionary<OptimisationObjective, Double> {
         return self.scores
     }
 

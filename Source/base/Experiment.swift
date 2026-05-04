@@ -2,13 +2,24 @@ import Foundation
 
 //#MARK: - Relational DB Compression.
 struct EncodableTruck : Encodable {
-    let id = UUID()
+    private static var counter : Int = 0
+    let id : Int
     let sequence : [Int]
-    let score : [OptimisationObjective : Double]
+    let score : [String : Double]
+
+    init(sequence: [Int], score: [OptimisationObjective: Double]) {
+        EncodableTruck.counter += 1
+
+        self.id = EncodableTruck.counter
+        self.sequence = sequence
+        self.score = Dictionary(
+            uniqueKeysWithValues: score.map { ($0.key.rawValue, $0.value) }
+        )
+    }
 }
 
 struct EncodableRoutine : Encodable {
-    let trucks : [UUID]
+    let trucks : [Int]
     let strictness : Double
     let generation : Int
 }
@@ -32,7 +43,9 @@ struct CompressedExperimentInformation : Encodable {
 func CompressRoutines(history: [Routine], front: [Routine]) -> (trucks: [EncodableTruck], history: [EncodableRoutine], front: [EncodableRoutine]) {
     var uniqueTrucks = [String : EncodableTruck]()
     for (_, truck) in history.flatMap({$0.GetTrucks()}) {
-        uniqueTrucks[truck.GetID()] = EncodableTruck(sequence: truck.GetSequence(), score: truck.GetAllFitness())
+        if let _  = uniqueTrucks[truck.GetID()] {} else {
+            uniqueTrucks[truck.GetID()] = EncodableTruck(sequence: truck.GetSequence(), score: truck.GetAllFitness())
+        }
     }
     var encodableHistory = [EncodableRoutine]()
     for routine in history {
@@ -80,6 +93,7 @@ func CompressExperimentInformation(experimentInfo: ExperimentInformation) -> Com
     )
 }
 
+//#MARK: - Logging
 struct ExperimentInformation {
     let name : String
     let runNumber : Int
@@ -102,7 +116,7 @@ func logExperiment(experimentInfo: ExperimentInformation) {
     if let resultsURL = generateFolder(at: basePath, named: "results") {
         if let experimentURL = generateFolder(at: resultsURL, named: experimentInfo.name) {
             let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.outputFormatting = [.sortedKeys]
             do {
                 let encodedData = try encoder.encode(compressedData)
 
