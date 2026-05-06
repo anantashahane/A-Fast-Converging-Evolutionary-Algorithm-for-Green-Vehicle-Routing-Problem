@@ -16,19 +16,19 @@ func RunExperiment(containingName: String?, index: Int = 1, populationCount: Int
     for benchmarkPath in GetAllBenchmarks(benchmarkNameContains: containingName) {
         let clock = ContinuousClock()
         if let benchmark = ReadFile(filePath: benchmarkPath) {
+            let ga = GeneticAlgorithm(benchmark: benchmark, populationCount: populationCount, iterations: iterations)
             let time = clock.measure {
-                let ga = GeneticAlgorithm(benchmark: benchmark, populationCount: populationCount, iterations: iterations)
                 results = ga.run()
             }
             let experimentInfo = ExperimentInformation(
-                name: "Depot-Anchoring",
+                name: ga.experimentName,
                 runNumber: index,
                 populationSize: populationCount,
                 iterationCount: iterations,
                 benchmark: benchmark,
                 history: results.history,
                 front: results.front,
-                executionTime: Double(time.components.seconds)
+                executionTime: time.doubleValue
             )
             logExperiment(experimentInfo: experimentInfo)
         }

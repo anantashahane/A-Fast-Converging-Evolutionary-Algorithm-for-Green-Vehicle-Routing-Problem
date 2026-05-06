@@ -136,3 +136,10 @@ extension Double {
         }
     }
 }
+
+extension Duration {
+    var doubleValue: Double {
+        let c = self.components
+        return Double(c.seconds) + Double(c.attoseconds) / 1e18
+    }
+}

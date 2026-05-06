@@ -5,7 +5,7 @@ import Foundation
 /// supporting functions.
 /// 
 /// 
-class GeneticAlgorithm {
+class GeneticAlgorithm : Runnable {
     // Configuration parameters
     internal let benchmark : Benchmark
     internal let iterations: Int

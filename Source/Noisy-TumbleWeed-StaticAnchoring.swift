@@ -1,6 +1,9 @@
 import Foundation
 
-extension GeneticAlgorithm : Runnable {
+extension GeneticAlgorithm {
+    var experimentName: String {
+        "Noisy-TumbleWeed-StaticAnchoring"
+    }
 
     func CalculateStrictness(for individual: Routine) -> Routine {
         let frontSize = Double(self.fronts.count)
@@ -17,7 +20,7 @@ extension GeneticAlgorithm : Runnable {
         for (index, individual) in self.offspringPopulation.enumerated() {
             switch Double.random(in: 0...1) {
                 case ...0.3: offspringPopulation[index]  = IntraVehicularMutation(individual: individual)
-                default: let destructionProbability = Double.random(in: 0.1...0.6)
+                default: let destructionProbability = 0.4
                 offspringPopulation[index] = LNS(individual: individual, destructionProbability: destructionProbability, dynamicAnchoring: false)
             }
         }

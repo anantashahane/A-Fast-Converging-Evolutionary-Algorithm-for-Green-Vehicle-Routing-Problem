@@ -16,5 +16,6 @@ protocol PointRepresentable {
 
 
 protocol Runnable {
+    var experimentName : String {get}
     func run() -> (history: [Routine], front: [Routine])
 }
