@@ -41,7 +41,7 @@ Creating a New Experiment
 
 The base `GeneticAlgorithm` class conforms to the `Runnable` protocol.
 
-Meaning each experiment implementation must provide:
+Each experiment implementation must provide:
 
 * **`experimentName`**
     ```Swift
@@ -67,9 +67,23 @@ To add a new experiment:
 
 ## Building
 
-Display available experiments:
+Display available experiments by:
 ```bash
     make help
+```
+Which generates:
+```bash
+    Usage:
+    make ALG=<option> build
+
+    Available options:
+    - foo
+    - Noisy-TumbleWeed-DynamicAnchoring
+    - ...
+    - Noisy-TumbleWeed-StaticAnchoring
+
+    Example:
+    make ALG=A build
 ```
 Build a specific experiment:
 ```bash
@@ -84,7 +98,7 @@ Arguments
 
 | Argument | Description |
 |---|---|
-| `BenchmarkName` | Benchmark from `./Benchmarks`. Use `-` to run all benchmarks. Run binary and `Benchmarks` directory should be in same directory.|
+| `BenchmarkName` | Benchmark from `./Benchmarks`. Use `-` to run all benchmarks. The executable and `Benchmarks` directory should be in same directory.|
 | `populationSize` | Population size for the evolutionary algorithm. |
 | `iterationCount` | Number of optimisation iterations. |
 | `index?` | Optional output identifier. Defaults to `1`. Useful for repeated runs. |
@@ -99,9 +113,138 @@ Experiments can be executed concurrently using GNU Parallel:
 ```
 Notes
 
-* A (100 + 100) evolutionary configuration with 500 iterations produces approximately 13 GB of output data.
-* Running the full benchmark suite (920 instances) takes roughly 2h 58m on an Apple M4 chip.
-* The current parallel execution implementation may be replaced in the future with native Swift concurrency support.
+* A (100 + 100) evolutionary configuration with 500 iterations produces approximately **13 GB** of output data.
+* Running the full benchmark suite (920 instances) takes roughly **2h 58m** on an Apple M4 chip.
+* The current parallel execution implementation will be replaced in the future with native Swift concurrency.
+
+## Result Format
+
+Each experiment generates a directory under:
+
+    ./results/<experimentName>/
+
+For every benchmark run, the program produces a JSON file named:
+
+    <benchmarkName>-<index>.json
+
+The file stores a compressed representation of the experiment state and final Pareto front.
+
+---
+
+## Top-Level Structure
+
+```swift
+struct CompressedExperimentInformation : Encodable {
+
+    let name : String
+    let runNumber : Int
+
+    let populationSize : Int
+    let iterationCount : Int
+    let benchmark : Benchmark
+
+    let trucks : [EncodableTruck]
+    let history : [EncodableRoutine]
+    let front : [EncodableRoutine]
+
+    let executionTime : Double
+}
+```
+
+---
+
+## Field Description
+
+| Field | Description |
+|---|---|
+| `name` | Name of the experiment configuration. |
+| `runNumber` | Numerical identifier for repeated runs. |
+| `populationSize` | Evolutionary population size used during optimisation. |
+| `iterationCount` | Number of optimisation iterations executed. |
+| `benchmark` | Benchmark instance loaded from `./Benchmarks`. |
+| `trucks` | Shared truck pool used by all encoded routines. |
+| `history` | Historical population evolution across generations. |
+| `front` | Final Pareto front produced by the algorithm. |
+| `executionTime` | Total runtime in seconds. |
+
+---
+
+## `EncodableTruck`
+
+Represents a reusable truck route entry.
+
+```swift
+struct EncodableTruck : Encodable {
+    let id : Int
+    let sequence : [Int]
+    let score : [String : Double]
+}
+```
+
+### Fields
+
+| Field | Description |
+|---|---|
+| `id` | Unique truck identifier used as a foreign key. |
+| `sequence` | Ordered list of customer IDs representing the route. |
+| `score` | Objective scores associated with the route (e.g. distance, fuel consumption). |
+
+---
+
+## `EncodableRoutine`
+
+Represents a candidate solution within the evolutionary process.
+
+```swift
+struct EncodableRoutine : Encodable {
+    let trucks : [Int]
+    let strictness : Double
+    let generation : Int
+}
+```
+
+### Fields
+
+| Field | Description |
+|---|---|
+| `trucks` | References to `EncodableTruck.id`. |
+| `strictness` | Corridor strictness value used during mutation updates. |
+| `generation` | Generation index where the routine was produced. |
+
+---
+
+## Design Notes
+
+The result format is intentionally compressed to minimise disk usage during large-scale experimentation.
+
+A naive serialisation approach that duplicated full route information for every routine produced approximately **121 GB** of output data during benchmark execution.
+
+To reduce storage overhead, the experiment format separates reusable truck routes from evolutionary routines:
+
+- truck routes are stored once in `trucks`,
+- routines reference trucks using integer IDs,
+    - hence fitness of the routines is the aggregate fitness of the trucks its referenced trucks.
+- historical populations reuse shared route entries instead of duplicating them.
+
+This compression scheme reduced the storage footprint to approximately **13 GB** for the same workload configuration.
+
+The reduced output size significantly improves:
+
+- long-running benchmark scalability,
+- multi-run statistical experimentation,
+- filesystem performance,
+- result archival and post-processing efficiency.
+
+This design is especially important because a full benchmark sweep may execute hundreds of instances across many generations and repeated runs.
+
+## Example Output Layout
+
+    ./results/
+    └── Experiment_Name/
+        ├── A-n32-k5-1.json
+        ├── A-n32-k5-2.json
+        ├── A-n37-k6-1.json
+        └── ...
 
 
 ## Project Goals
@@ -114,4 +257,3 @@ Notes
 
 <!-- ## Undertanding Outputs
 <TODO> explaination.
---- -->
