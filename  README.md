@@ -1,18 +1,31 @@
-# A Fast Converging Evolutionary Algorithm for Green Vehicle Routing Problem
+
+
+# High-Efficiency Selective Optimisation for the Green Vehicle Routing Problem
 [![Swift](https://www.swift.org/assets/images/swift~dark.svg)](https://www.swift.org)
 
-A Genetic Algorithm, for Green Vehicle Routing Problem that is speed up by disciplined mutation by means of `Corridor Model` from Evolutionary Strategies, written completely in Swift.
+A research-oriented experimental framework for studying the combination of the Corridor Model with the Capacitated Vehicle Routing Problem (CVRP).
 
-## Thinking Behind Algorithm
-Inspired by the Corridor Model from Evolutionary Strategies, we introduce an analogue using Dot Product and Probabilitstic Roulette Operator to help drastically improve the inter-generation convergence speed. Instead of focusing on "What mutator do I use?" we focused on "How the mutator mutate?" and using the locality of customers with respect to the depot, we approximate relatively optimal mutations for faster convergence. 
+This project introduces an analogue of the Corridor Model using **dot-product locality estimation** and a **probabilistic roulette operator** to improve inter-generational convergence speed in evolutionary optimisation.
 
-We also introduced a more optimal initialisation algorithm that helps start the algorithm at 30% shorted travel distance, to further speed up the convergence. The fast convergence allows the algorithm to:
+Rather than focusing solely on *which mutation operator* to use, this work explores how to *mutate optimally*. By leveraging customer locality relative to:
 
-*  Spend the remaining iteration on optimising for other objectives.
-*  Provide a good initial population for other multi-objective optimisation VRP problems.
+* the depot (**static anchoring**), and
+* neighbouring customers (**dynamic anchoring**),
 
-A short research paper is soon going to be published in ACM journal, by GECCO 2024 Australia Conference, the citation details can be found below:
-```
+the algorithm approximates higher-quality mutations that accelerate convergence toward efficient routing solutions.
+
+Additionally, this project introduces an improved population initialisation strategy capable of producing solutions within approximately **30%–60% of optimal travel distance** at the start of execution. This significantly reduces early-stage search overhead and allows later generations to focus on higher-order optimisation objectives.
+
+The initialiser is designed to:
+
+* Spend more evolutionary iterations optimising secondary objectives.
+* Provide strong initial populations for other multi-objective VRP formulations.
+* Improve convergence stability across benchmark datasets.
+
+## Research Background
+
+This work is a continuation of a poster published at the ACM GECCO 2024 Companion Conference.
+```tex
 \copyrightyear{2024}
 \acmYear{2024}
 \setcopyright{rightsretained}
@@ -22,76 +35,83 @@ A short research paper is soon going to be published in ACM journal, by GECCO 20
 \acmISBN{979-8-4007-0495-6/24/07}
 ```
 
-## How to Build
-We have provided a make script that takes in one of the following arguement and build the associated model executable:
-1. `TumbleWeedModel`: is a model that searches for optimal strictness, with former pareto fronts exploring and later exploiting.
-2. `SelfAdaptationModel`: is a model that searches for optimal strictness using normal random number generation.
-3. `NoCorridorModel`: is a tradational complete random mutation model.
-To get an executable just run `make <One of the above model names>`. This will generate `run` file that takes in some arguement, if not provided it runs all the benchmarks 10 times for statistical relevance.
+## Running Experiments
 
-A macOS app will also be made available to help visualise the main contributions of this research.
+Creating a New Experiment
 
-## How to use
-For Xcode user, simple open the Xcode build the project, and copy the `Benchmarks` folders into the same directory where the built target is created. Then use:
+The base `GeneticAlgorithm` class conforms to the `Runnable` protocol.
 
- `./<Executable Name> contains <Benchmark Substring>` for running certain subsets of the benchmarks that contains the substring : eg `./Experiment\ 6 contains A-n32-k5`. 
+Meaning each experiment implementation must provide:
 
-Similary one can also run it on all the benchmark including and after the `./<Executable Name> after <Benchmark Name>`, eg `./Experiment 6 after M-n200-k17`.
+* **`experimentName`**
+    ```Swift
+        var experimentName: String {
+            "experiment_name"
+        }
+    ```
+* **`run()`**
+    ```Swift
+        func run() -> (history: [Routine], front: [Routine]) {
+            // Algorithm logic
+            return (history: self.history, front: self.fronts[0])
+        }
+    ```
+To add a new experiment:
 
-For all other platforms, in the root folder of the repository `swiftc -o <Output File Name> <List of all *.swift files in directory>`, then simply `./<Output File Name>`.
+1. Create a new source file inside `./Source/`
+    ```bash
+        touch ./Source/foo.swift
+    ```
+2. Implement an extension on `GeneticAlgorithm` containing the two required members above.
+3. The Makefile will automatically detect and register the new experiment.
 
-The algorithm will return files `<Benchmark Namme>.json`, which is the benchmark repsresentation. `convergence (*).json` contains the time series of distance and fuel evaluation with the $length = iterationCount + 1$, the extra on it the initialisation evaluation. `front (*).json` contains the pareto front of the Distance vs Fuel evaluation. In the aforementioned file `*` denotes the run number the range of which can be change in `main.swift`. The defination of Benchmark files is:
+## Building
+
+Display available experiments:
+```bash
+    make help
 ```
-struct EncodedBenchmark : Codable {
-    let benchmark : String
-    let customers : [EncodedCustomer]
-    let fleetSize : Int
-    let vehicleCapcity : Int
-    let optimal : Int?
-}
+Build a specific experiment:
+```bash
+    make ALG=foo build
 ```
-where EncodedCustomer is:
+
+## Running
+```bash
+    ./heso_vrp [BenchmarkName] [populationSize] [iterationCount] [index?]
 ```
-struct EncodedCustomer : Codable {
-    let id : Int
-    let x : Double
-    let y : Double
-    let demand : Int
-}
+Arguments
+
+| Argument | Description |
+|---|---|
+| `BenchmarkName` | Benchmark from `./Benchmarks`. Use `-` to run all benchmarks. Run binary and `Benchmarks` directory should be in same directory.|
+| `populationSize` | Population size for the evolutionary algorithm. |
+| `iterationCount` | Number of optimisation iterations. |
+| `index?` | Optional output identifier. Defaults to `1`. Useful for repeated runs. |
+
+## Parallel Execution
+
+For statistically meaningful results, it is recommended to generate at least **10 runs per benchmark**.
+
+Experiments can be executed concurrently using GNU Parallel:
+```sh
+    sh runner.sh
 ```
-convergence:
- 
- ```
- struct Convergence : Encodable {
-    let benchmark : String
-    let optimalDistance : Int?
-    let distanceSequence : [Double]
-    let fuelSequence : [Double]
-}
- ```
+Notes
 
-pareto front:
-```
-struct SaveData : Encodable {
-    let benchmark : String
-    let Optimal : Int?
-    let front : [EncodableRoutine]
-}
-```
-one can use the json format to run their own custom benchmark. The depot is marked by setting `demand = 0` and it is 1 depot problem solver, so only one customer can have `demand = 0`.
-
-## Results
-Find below the results obtained by the algorithm, starting with the 
-initialisation results:
-![Initialisation Results](./Assets/InitialisationResults.png "Initialisation Results.")
-
-The convergence speed Comparison Distance:
-![Convergence Speed Results](./Assets/AUC-Distance.png "Convergence Speed Results Distance.")
-The convergence speed Comparison Fuel:
-![Convergence Speed Results](./Assets/AUC-Fuel.png "Convergence Speed Results Fuel.")
-
-The convergence speed Comparison Overall:
-![Convergence Speed Results](./Assets/AUC-Overall.png "Convergence Speed Results Overall.")
+* A (100 + 100) evolutionary configuration with 500 iterations produces approximately 13 GB of output data.
+* Running the full benchmark suite (920 instances) takes roughly 2h 58m on an Apple M4 chip.
+* The current parallel execution implementation may be replaced in the future with native Swift concurrency support.
 
 
----
+## Project Goals
+
+* Faster evolutionary convergence for CVRP variants.
+* Improved mutation locality heuristics.
+* Better initial population quality.
+* Scalable experimentation for multi-objective routing problems.
+* Reproducible benchmark-driven optimisation research.
+
+<!-- ## Undertanding Outputs
+<TODO> explaination.
+--- -->
