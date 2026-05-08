@@ -11,30 +11,6 @@ func PrintHelp() {
         print("The program expects to get 4 arguements after run command.")
 }
 
-func RunExperiment(containingName: String?, index: Int = 1, populationCount: Int = 100, iterations: Int = 500) {
-    var results = (history: [Routine](), front: [Routine]())
-    for benchmarkPath in GetAllBenchmarks(benchmarkNameContains: containingName) {
-        let clock = ContinuousClock()
-        if let benchmark = ReadFile(filePath: benchmarkPath) {
-            let ga = GeneticAlgorithm(benchmark: benchmark, populationCount: populationCount, iterations: iterations)
-            let time = clock.measure {
-                results = ga.run()
-            }
-            let experimentInfo = ExperimentInformation(
-                name: ga.experimentName,
-                runNumber: index,
-                populationSize: populationCount,
-                iterationCount: iterations,
-                benchmark: benchmark,
-                history: results.history,
-                front: results.front,
-                executionTime: time.doubleValue
-            )
-            logExperiment(experimentInfo: experimentInfo)
-        }
-    }
-}
-
 func main() {
     let args = CommandLine.arguments
 

@@ -125,12 +125,18 @@ func GetAllBenchmarks(benchmarkNameContains: String?) -> [String] {
     return benchmarkPaths.sorted()
 }
 
-// for benchmark in GetAllBenchmarks(benchmarkNameContains: nil) {
-//     if let benchmarkData = ReadFile(filePath: benchmark) {
-//         print("\t\(benchmarkData.name) from \(benchmarkData.title); best known \(benchmarkData.optimality)")
-//         print("\t\t Truck fleet of \(benchmarkData.trucks) with capacity \(benchmarkData.capacity).")
-//         for point in benchmarkData.points {
-//         print("\t\t\t \(point.kind == .Depot ? "Depot at" : "Customer with demand \(point.demand)") at (\(point.x), \(point.y)).")
-//         }
-//     }
-// }
+func ResultAlreadyExists(
+    experimentName: String,
+    benchmark: String,
+    index: Int
+) -> Bool {
+
+    let fileManager = FileManager.default
+
+    let fileURL = URL(fileURLWithPath: fileManager.currentDirectoryPath)
+        .appendingPathComponent("results")
+        .appendingPathComponent(experimentName)
+        .appendingPathComponent("\(benchmark)-\(index).json")
+
+    return fileManager.fileExists(atPath: fileURL.path)
+}
